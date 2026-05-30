@@ -22,13 +22,13 @@ def main():
     omega_dict  = {"start": 0.5, "stop": 2.5, "num": 4}
 
     # Initial covariance diagonals
-    var = [1.0, 1.0, 0.0, 0.0]
+    var = [1.0, 1.0, 1.0, 1.0]
 
     # Time domain
-    time_dict = {"start": 0.0, "stop": 10.0, "num": 200}
+    time_dict = {"start": 0.0, "stop": 10.0, "num": 1000}
 
     # Direction
-    direction = "2->1"
+    direction = "3->2"
 
     # Build parameter grid (k, b, m, omega)
     param_tensor = create_params_grid(k_dict, b_dict, m_dict, omega_dict)
