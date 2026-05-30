@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Compute Liang–Kleeman information flow on all parameter grid combinations, batched with JAX."""
+"""Compute Liang–Kleeman information flow on all parameter grid combinations
+   by re‑using the existing evaluate_theoretical_causality function."""
 
 import os
 import sys
 import numpy as np
-import jax
-import jax.numpy as jnp
-import sympy as sp
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from theoretical_causality.sym_information import symbolic_information_flow
+from theoretical_causality.eval_theoretical_causality import evaluate_theoretical_causality
 from runs.TC_run_functions import create_params_grid
 
 
@@ -21,60 +19,48 @@ def main():
     m_dict      = {"start": 0.5, "stop": 1.5, "num": 3}
     omega_dict  = {"start": 0.5, "stop": 2.5, "num": 4}
 
-    # Initial covariance diagonals
+    # Initial covariance diagonals (variances σ²)
     var = [1.0, 1.0, 1.0, 1.0]
 
     # Time domain
     time_dict = {"start": 0.0, "stop": 10.0, "num": 1000}
 
-    # Direction
-    direction = "3->2"
-
-    # Build parameter grid (k, b, m, omega)
+    # Build parameter grid (k, b, m, ω)
     param_tensor = create_params_grid(k_dict, b_dict, m_dict, omega_dict)
     N_k, N_b, N_m, N_omega, _ = param_tensor.shape
-    print("Parameter tensor shape (k, b, m, omega):", param_tensor.shape)
+    print("Parameter tensor shape (k, b, m, ω):", param_tensor.shape)
 
-    # Time vector
-    t_start = time_dict["start"]
-    t_vec = jnp.linspace(t_start, time_dict["stop"], time_dict["num"])
+    # Time vector for output shape
+    t_vec = np.linspace(time_dict["start"], time_dict["stop"], time_dict["num"])
+    N_t = len(t_vec)
 
-    # Load symbolic expression and lock t0
-    flow_dict, _ = symbolic_information_flow()
-    t0_sym = sp.symbols('t0', real=True)
-    expr = flow_dict[direction].subs(t0_sym, t_start)
+    # Allocate array for T(3→2)
+    flow32 = np.empty((N_k, N_b, N_m, N_omega, N_t))
 
-    # Lambdify to JAX
-    t_sym, k_sym, b_sym, m_sym, omega_sym, s11_sym, s22_sym, s33_sym, s44_sym = \
-        sp.symbols('t k b m omega sigma11 sigma22 sigma33 sigma44', real=True)
-    j_func = sp.lambdify(
-        (t_sym, k_sym, b_sym, m_sym, omega_sym, s11_sym, s22_sym, s33_sym, s44_sym),
-        expr, modules='jax'
-    )
+    total = N_k * N_b * N_m * N_omega
+    cnt = 0
+    # Loop over every combination
+    for ik in range(N_k):
+        for ib in range(N_b):
+            for im in range(N_m):
+                for iw in range(N_omega):
+                    params = param_tensor[ik, ib, im, iw]
+                    # evaluate_theoretical_causality(var, parameters, time_dict)
+                    result32, _, _ = evaluate_theoretical_causality(
+                        var, list(params), time_dict
+                    )
+                    flow32[ik, ib, im, iw, :] = result32
+                    cnt += 1
+                    if cnt % 10 == 0:
+                        print(f"Processed {cnt}/{total}")
 
-    s11_v, s22_v, s33_v, s44_v = var
-
-    # JIT‑compiled evaluator for a single parameter tuple
-    @jax.jit
-    def evaluate_one(p_vec):
-        k_val, b_val, m_val, omega_val = p_vec
-        return jnp.atleast_1d(j_func(t_vec, k_val, b_val, m_val, omega_val,
-                                     s11_v, s22_v, s33_v, s44_v))
-
-    # Flatten grid and vectorise
-    flat_params = jnp.array(param_tensor.reshape(-1, 4))
-    flow_flat = jax.vmap(evaluate_one, in_axes=(0,))(flat_params)
-
-    # Restore grid shape
-    flow = flow_flat.reshape(N_k, N_b, N_m, N_omega, len(t_vec))
-
-    print("Information‑flow array shape (params × time):", flow.shape)
-    print("Time‑points array shape:", (len(t_vec),))
+    print("Information‑flow array shape (params × time):", flow32.shape)
+    print("Time‑points array shape:", (N_t,))
 
     # Save
     np.savez("liang_kleeman_results.npz",
-             flow=np.asarray(flow),
-             time=np.asarray(t_vec))
+             flow=flow32,
+             time=t_vec)
     print("Saved -> liang_kleeman_results.npz")
 
 
