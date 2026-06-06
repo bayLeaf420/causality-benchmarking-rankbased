@@ -61,3 +61,11 @@ share/python-wheels/
 # ==========================================
 .DS_Store
 Thumbs.db
+
+# ==========================================
+# Generated Data
+# ==========================================
+results/*
+plots/*
+!results/.gitkeep
+!plots/.gitkeep

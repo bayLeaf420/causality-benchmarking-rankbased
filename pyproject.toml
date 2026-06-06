@@ -11,3 +11,6 @@ dependencies = [
     "scipy>=1.17.1",
     "sympy>=1.14.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
