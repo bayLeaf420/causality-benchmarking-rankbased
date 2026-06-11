@@ -1,13 +1,8 @@
-import os
-import sys
 import jax
 import jax.numpy as jnp
 from functools import partial 
 
-# Going to project parent folder
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
-
-from CCC_functions.ETC_helpers import find_pairs_fixed_length, substitute, dimensionsToOne
+from algorithms.ETC_helpers import find_pairs_fixed_length, substitute, dimensionsToOne
 
 @partial(jax.jit, static_argnums=(1, 2))
 def ETC_jit(sym_seq, max_length, num_bins):
