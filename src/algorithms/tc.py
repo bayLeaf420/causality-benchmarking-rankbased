@@ -73,7 +73,7 @@ def build_time_integral_fn(tau_start: float, tau_end: float, sigma_vec: jax.Arra
 
     # Integrate the function to obtain definite time integral expression
     integrated = information_flow.applyfunc(
-        lambda expr: sp.integrate(sp.integrate(tau, float(tau_start), float(tau_end)))
+        lambda expr: sp.integrate(sp.integrate(expr, (tau, float(tau_start), float(tau_end))))
     ) 
 
     # Warn about unevaluated entries

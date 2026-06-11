@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from functools import partial 
 
-from algorithms.ETC_helpers import find_pairs_fixed_length, substitute, dimensionsToOne
+from algorithms.ccc.ETC_helpers import find_pairs_fixed_length, substitute, dimensionsToOne
 
 @partial(jax.jit, static_argnums=(1, 2))
 def ETC_jit(sym_seq, max_length, num_bins):
