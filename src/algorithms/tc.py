@@ -61,7 +61,7 @@ def build_time_integral_fn(tau_start: float, tau_end: float, sigma_vec: jax.Arra
 
     # Fix tau_0 and initial variances to numeric value
     information_flow = information_flow.subs([
-        (tau_0, float(tau_0)), 
+        (tau_0, float(tau_start)), 
         (s11, float(sigma_vec[0])),
         (s22, float(sigma_vec[1])),
         (s33, float(sigma_vec[2])),
@@ -73,7 +73,7 @@ def build_time_integral_fn(tau_start: float, tau_end: float, sigma_vec: jax.Arra
 
     # Integrate the function to obtain definite time integral expression
     integrated = information_flow.applyfunc(
-        lambda expr: sp.integrate(sp.integrate(expr, (tau, float(tau_start), float(tau_end))))
+        lambda expr: sp.integrate(expr, (tau, float(tau_start), float(tau_end)))
     ) 
 
     # Warn about unevaluated entries
@@ -94,11 +94,8 @@ def build_time_integral_fn(tau_start: float, tau_end: float, sigma_vec: jax.Arra
 
     return lambda_info_integral
 
-@jax.jit(static_argnums=(1,))
-@jax.vmap(in_axes = (0, None))
-@jax.vmap(in_axes=(1, None))
-@jax.vmap(in_axes=(2, None))
-def tc_eval(params_tensor: jax.Array, time_integral_fn) -> jax.Array:
+
+def _tc_eval_inner(params_tensor: jax.Array, time_integral_fn) -> jax.Array:
     """Inputs:
     1. params_tensor: consists of axes (beta, mu, K). We vmap over this tensor. Shape is (beta_num, K_num, mu_num, 3) 
     2. time_integral_fn: Built in experiment script using _build_time_integral_fn. Takes in (beta, K, mu)_val
@@ -114,8 +111,19 @@ def tc_eval(params_tensor: jax.Array, time_integral_fn) -> jax.Array:
 
     return time_integral_fn(beta_val, K_val, mu_val)
     
-
-    
+tc_eval = jax.jit(
+    jax.vmap(
+        jax.vmap(
+            jax.vmap(
+                _tc_eval_inner,
+                in_axes=(0, None),
+            ),
+            in_axes=(1, None),
+        ),
+        in_axes=(2, None),
+    ),
+    static_argnums=(1,)
+)
 
 
 
