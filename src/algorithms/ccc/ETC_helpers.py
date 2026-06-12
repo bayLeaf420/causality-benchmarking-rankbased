@@ -9,7 +9,7 @@ def find_pairs_fixed_length(
     num_bins: int,
 ) -> tuple[jnp.ndarray, int, jnp.ndarray]:
 
-    M = max_length + num_bins - 1
+    M = max_length + num_bins
     first = input_array[:-1]
     second = input_array[1:]
     valid_pair = (first != -1) & (second != -1)
@@ -69,7 +69,7 @@ def substitute(
     # new symbol = current maximum + 1  (correctly increments each iteration)
     new_sym = jnp.max(sym_seq) + 1
     a, b = most_freq_pair[0], most_freq_pair[1]
-    M = max_length + num_bins - 1
+    M = max_length + num_bins 
     pair_hash = a * M + b
 
     # Second element of each replaced pair
