@@ -50,6 +50,8 @@ def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple,
 
     return information_flow, Sigma_t, mean_t, (tau, tau_0, beta, K, mu, s11, s22, s33, s44), (mean1, mean2, mean3, mean4)
 
+# def _normalised_information_flow():
+    # information_flow, Sigma_t, mean_t, (tau, tau_0, beta, K, mu, s11, s22, s33, s44), (mean1, mean2, mean3, mean4) = _symbolic_information_flow()
 
 
 def build_time_integral_fn(tau_init: jax.Array, sigma_init: Tuple[float]) -> sp.Matrix:
