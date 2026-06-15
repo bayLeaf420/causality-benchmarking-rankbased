@@ -1,5 +1,6 @@
 import sympy as sp
 import jax
+import jax.numpy as jnp
 from typing import Tuple, Callable
 # import jax.numpy as jnp
 
@@ -10,10 +11,11 @@ from typing import Tuple, Callable
 def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple, Tuple]:
     """Inputs: None
     """
+    # breakpoint()
     # Define time symbols (real and positive so that sympy can simplify the math)
-    tau, tau_0 = sp.symbols('tau tau_0', real=True, positive=True)
+    tau, tau_0 = sp.symbols('tau tau_0', real=True)
     # Define oscillator parameters, assuming omega_0 = 1 for the expression itself.
-    beta, K, mu = sp.symbols('beta K mu', real=True, positive=True)
+    beta, K, mu = sp.symbols('beta K mu', real=True)
     # Covariances = To be used for calculating flow
     s11, s22, s33, s44 = sp.symbols('sigma11 sigma22 sigma33 sigma44', real=True)
     # Means: Used later in sampling
@@ -22,7 +24,7 @@ def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple,
     # Define system matrix A
     A = sp.Matrix([
         [0, 1, 0, 0],
-        [-1, -beta, mu*(K**2), 0],
+        [-1, -beta, -mu*(K**2), 0],
         [0, 0, 0, 1],
         [0, 0, -K**2, 0],
     ])
@@ -64,7 +66,8 @@ def build_time_integral_fn(tau_init: jax.Array, sigma_init: Tuple[float]) -> sp.
     Outputs:
     JAX compatible lambda function for definite integral from tau_start to tau_end
     """
-    information_flow, _, symbols, _ = _symbolic_information_flow()
+    # breakpoint()
+    information_flow, _, _, symbols, _ = _symbolic_information_flow()
     tau, tau_0, beta, K, mu, s11, s22, s33, s44 = symbols
     tau_start, tau_end = tau_init[0], tau_init[1]
     # Fix tau_0 and initial variances to numeric value
@@ -103,10 +106,10 @@ def build_time_integral_fn(tau_init: jax.Array, sigma_init: Tuple[float]) -> sp.
     return lambda_info_integral
 
 
-def _tc_eval_inner(params_tensor: jax.Array, time_integral_fn: Callable) -> jax.Array:
+def _tc_integral_inner(params_tensor: jax.Array, time_integral_fn_list: Callable) -> jax.Array:
     """Inputs:
     1. params_tensor: consists of axes (beta, mu, K). We vmap over this tensor. Shape is (beta_num, K_num, mu_num, 3) 
-    2. time_integral_fn: Built in experiment script using _build_time_integral_fn. Takes in (beta, K, mu)_val
+    2. time_integral_fn_list: Built in experiment script using _build_time_integral_fn. Takes in (beta, K, mu)_val
     
     Outputs:
     1. Causal matrix of shape (4, 4), denotes adjacency matrix of weighted causal graph.
@@ -117,23 +120,33 @@ def _tc_eval_inner(params_tensor: jax.Array, time_integral_fn: Callable) -> jax.
     K_val = params_tensor[1]
     mu_val = params_tensor[2]
 
-    return time_integral_fn(beta_val, K_val, mu_val)
+    rows = [
+        jnp.stack([fn(beta_val, K_val, mu_val) for fn in row])
+        for row in time_integral_fn_list
+    ]
+    return jnp.stack(rows)
     
-tc_eval = jax.jit(
+tc_integral = jax.vmap(
     jax.vmap(
         jax.vmap(
-            jax.vmap(
-                _tc_eval_inner,
-                in_axes=(0, None),
-            ),
-            in_axes=(1, None),
+            _tc_integral_inner,
+            in_axes=(0, None),
         ),
-        in_axes=(2, None),
+        in_axes=(1, None),
     ),
-    static_argnums=(1,)
-)
+    in_axes=(2, None),
+),
+    
 
-# --------------- Analytical Integral takes too long. Using numerical integration -------------
 
+"""
+function tc_integral:
+Inputs:
+1. params_tensor
+2. time_integral_fn
+
+Outputs:
+1. time_integral_tensor
+"""
 
 
