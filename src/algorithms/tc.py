@@ -2,15 +2,24 @@ import sympy as sp
 import jax
 import jax.numpy as jnp
 from typing import Tuple, Callable
+import pickle
+from pathlib import Path
 # import jax.numpy as jnp
 
 # This library tells theoretical causality between coupled oscillators
 # Note: tau_vec will always be a jnp.array. 
 # IN experiments script only call build_time_integral_fn and then the tc_eval function.
 
+CACHE_PATH = Path("results/symbolic_flow_cache.pkl")
+
 def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple, Tuple]:
     """Inputs: None
     """
+    # Expensive to compute -- just cache output 1st time
+    if CACHE_PATH.exists():
+        with open(CACHE_PATH, "rb") as f:
+            return pickle.load(f)
+        
     # breakpoint()
     # Define time symbols (real and positive so that sympy can simplify the math)
     tau, tau_0 = sp.symbols('tau tau_0', real=True)
@@ -44,13 +53,24 @@ def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple,
 
     # Sigma_t is covariance matrix as a function of time
     Sigma_t = exp_At * Sigma_0 * exp_At.T
+    Sigma_t = Sigma_t.applyfunc(lambda e: sp.re(sp.expand_complex(e)))
+
+    # Sigma_t = Sigma_t.applyfunc(lambda e: sp.expand_complex(e).simplify())
 
     # mean_t is mean vector as a function of time
     mean_t = exp_At * mean_0
+    mean_t = mean_t.applyfunc(lambda e: sp.re(sp.expand_complex(e)))
 
     information_flow = sp.Matrix(A.rows, A.cols, lambda i, j: A[j, i] * (Sigma_t[j, i] / Sigma_t[j, j]))
 
-    return information_flow, Sigma_t, mean_t, (tau, tau_0, beta, K, mu, s11, s22, s33, s44), (mean1, mean2, mean3, mean4)
+    symbols = (tau, tau_0, beta, K, mu, s11, s22, s33, s44)
+    mean_symbols = (mean1, mean2, mean3, mean4)
+    result = information_flow, Sigma_t, mean_t, symbols, mean_symbols 
+
+    CACHE_PATH.parent.mkdir(exist_ok=True)
+    with open(CACHE_PATH, "wb") as f:
+        pickle.dump(result, f)
+    return result
 
 # def _normalised_information_flow():
     # information_flow, Sigma_t, mean_t, (tau, tau_0, beta, K, mu, s11, s22, s33, s44), (mean1, mean2, mean3, mean4) = _symbolic_information_flow()
@@ -99,7 +119,7 @@ def build_time_integral_fn(tau_init: jax.Array, sigma_init: Tuple[float]) -> sp.
 
     free_symbols = (beta, K, mu)
     lambda_info_integral = [
-        [sp.lambdify(free_symbols, integrated[i, j], modules='jax') for j in range(integrated.cols)]
+        [sp.lambdify(free_symbols, integrated[i, j], modules='jax', cse=True) for j in range(integrated.cols)]
         for i in range(integrated.rows)
     ]
 

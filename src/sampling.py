@@ -3,8 +3,9 @@ import jax
 import jax.numpy as jnp
 from typing import Tuple, Callable, Dict
 from algorithms.tc import _symbolic_information_flow
-from functools import partial
+from functools import partial# , lru_cache
 
+# @lru_cache(maxsize=None)
 def _lambdify_oscillator(
         tau_init: Tuple[float, float, int], 
         mean_init: Tuple[float], # 4 floats 
@@ -36,8 +37,8 @@ def _lambdify_oscillator(
 
     # Use lambdify to convert into a JAX-compatible lambda function. 
     mean_expr_flat = [mean_expr[i, 0] for i in range(4)] # So that output is of shape (4,)
-    mean_lambda = sp.lambdify((tau, beta, K, mu), mean_expr_flat, modules='jax')
-    sigma_lambda = sp.lambdify((tau, beta, K, mu), sigma_expr, modules='jax')
+    mean_lambda = sp.lambdify((tau, beta, K, mu), mean_expr_flat, modules='jax', cse=True)
+    sigma_lambda = sp.lambdify((tau, beta, K, mu), sigma_expr, modules='jax', cse=True)
 
     return mean_lambda, sigma_lambda
 
@@ -73,7 +74,7 @@ def _sample_single(
 
     return jax.vmap(
         lambda tau, key, beta, K, mu: jax.random.multivariate_normal(
-            key, mean_lambda(tau, beta, K, mu), sigma_lambda(tau, beta, K, mu), 
+            key, jnp.array(mean_lambda(tau, beta, K, mu)), sigma_lambda(tau, beta, K, mu), 
         ),
         in_axes=(0, 0, None, None, None), # Vmap over tau and key dimensions. 
     )(tau_vec, keys, beta, K, mu) 

@@ -3,6 +3,7 @@ import jax
 import jax.numpy as jnp
 from typing import List, Tuple, Callable
 from quadax import quadgk
+from functools import partial
 
 from algorithms.tc import _symbolic_information_flow
 
@@ -41,7 +42,13 @@ def _build_lambda_fns(
 
     return lambda_information_flow
     
-def _single_integral(
+# First vmap is (beta_n, K_n, mu_n, 3) -> (K_n, mu_n, 3)
+# Second is (K_n, mu_n, 3) -> (mu_n, 3)
+# Third is (mu_n, 3) -> (3,)
+@partial(jax.vmap, in_axes=(0, None, None))
+@partial(jax.vmap, in_axes=(0, None, None))
+@partial(jax.vmap, in_axes=(0, None, None))
+def time_integrals(
         params_tensor: jax.Array,
         tau_init: Tuple[float, float, int],
         lambda_information_flow: List[List[Callable]]

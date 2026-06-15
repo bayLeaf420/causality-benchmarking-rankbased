@@ -27,3 +27,5 @@ def build_params_tensor_jax(
     params_tensor = jnp.stack(jnp.meshgrid(beta_arr, K_arr, mu_arr, indexing='ij'), axis=-1)
 
     return params_tensor
+
+# def sym_inf_flow_path = 

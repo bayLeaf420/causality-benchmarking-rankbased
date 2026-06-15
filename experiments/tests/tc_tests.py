@@ -13,7 +13,7 @@ def test_symb_info_flow():
     # Use *_ to correctly unpack and ignore the trailing metadata tuples
     expr_matrix, *_ = _symbolic_information_flow()
 
-    output_path = Path("./results/symbolic_info_flow_matrix.pkl")
+    output_path = Path("./results/test_results/symbolic_info_flow_matrix.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(expr_matrix, f)
     print(f"\n[INFO] Successfully saved sp.Matrix to {output_path.resolve()}")
@@ -84,13 +84,20 @@ def test_integration_time():
     print(f"\n[INFO] Successfully saved sp.Matrix to {output_path.resolve()}")
     return None
 
+# IMPNOTE: We have determined now that analytical integration with sympy takes too long. 
+
+# def test_numerical_integration():
+#     params_dict = {
+#         'beta': (0.1)
+#     }
+
 if __name__=="__main__":
     
     start_time = time.perf_counter()
-    # test_symb_info_flow()
+    test_symb_info_flow()
     # test_tc_integral()
     # test_integral_build()
-    pdb.runcall(test_integration_time)
+    # pdb.runcall(test_integration_time)
     end_time = time.perf_counter()
 
     # Calculate and print total execution time
