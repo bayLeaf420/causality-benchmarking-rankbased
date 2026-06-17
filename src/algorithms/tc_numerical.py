@@ -5,11 +5,12 @@ from typing import List, Tuple, Callable
 from quadax import quadgk
 from functools import partial
 
-from algorithms.tc import _symbolic_information_flow
+from algorithms.tc import _symbolic_information_flow, _normalised_information_flow
 
 # Will have a function to build lambdified function of beta, K, mu and tau. 
 # tau_0 and covariances will remain fixed. 
 # Integration along tau
+
 
 def _build_lambda_fns(
         tau_init: Tuple[float, float, int], sigma_init: Tuple[float]
@@ -23,10 +24,19 @@ def _build_lambda_fns(
     1. lambda_information_flow consists of all T(i->j) as lambda functions
     """
     information_flow, _, _, symbols, _ = _symbolic_information_flow()
+    norm_info_flow = _normalised_information_flow()
     tau, tau_0, beta, K, mu, s11, s22, s33, s44 = symbols
 
     # Fix tau_0 and initial variances to numeric value
     information_flow = information_flow.subs([
+        (tau_0, float(tau_init[0])), 
+        (s11, float(sigma_init[0])),
+        (s22, float(sigma_init[1])),
+        (s33, float(sigma_init[2])),
+        (s44, float(sigma_init[3])),
+        ])
+    
+    norm_info_flow = norm_info_flow.subs([
         (tau_0, float(tau_init[0])), 
         (s11, float(sigma_init[0])),
         (s22, float(sigma_init[1])),
@@ -39,8 +49,12 @@ def _build_lambda_fns(
         [sp.lambdify(req_symbols, information_flow[i, j], modules='jax') for j in range(information_flow.cols)]
         for i in range(information_flow.rows)
     ]
+    lambda_norm_info = [
+        [sp.lambdify(req_symbols, norm_info_flow[i, j], modules='jax') for j in range(norm_info_flow.cols)]
+        for i in range(norm_info_flow.rows)
+    ]
 
-    return lambda_information_flow
+    return lambda_information_flow, lambda_norm_info
     
 # First vmap is (beta_n, K_n, mu_n, 3) -> (K_n, mu_n, 3)
 # Second is (K_n, mu_n, 3) -> (mu_n, 3)
@@ -51,8 +65,8 @@ def _build_lambda_fns(
 def time_integrals(
         params_tensor: jax.Array,
         tau_init: Tuple[float, float, int],
-        lambda_information_flow: List[List[Callable]]
-
+        lambda_information_flow: List[List[Callable]],
+        lambda_norm_info: List[List[Callable]],
 ) -> jax.Array:
     """
     Inputs:
@@ -77,10 +91,16 @@ def time_integrals(
     #     for row in lambda_information_flow
     # ]
 
-    rows = [
+    rows1 = [
         jnp.stack([quadgk(fn, [tau_start, tau_end], (beta, K, mu)) for fn in row])
         for row in lambda_information_flow
     ]
-    integrals_tensor = jnp.stack(rows)
+    integrals_tensor = jnp.stack(rows1)
 
-    return integrals_tensor
+    rows2 = [
+        jnp.stack([quadgk(fn, [tau_start, tau_end], (beta, K, mu)) for fn in row])
+        for row in lambda_norm_info
+    ]
+    norm_integral_tensor = jnp.stack(rows2)
+
+    return integrals_tensor, norm_integral_tensor

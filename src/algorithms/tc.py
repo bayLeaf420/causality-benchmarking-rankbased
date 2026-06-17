@@ -10,14 +10,15 @@ from pathlib import Path
 # Note: tau_vec will always be a jnp.array. 
 # IN experiments script only call build_time_integral_fn and then the tc_eval function.
 
-CACHE_PATH = Path("results/symbolic_flow_cache.pkl")
+CACHE_PATH_SIF = Path("results/symbolic_flow_cache.pkl")
+CACHE_PATH_NSIF = Path("results/normalised_flow_cache.pkl")
 
 def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple, Tuple]:
     """Inputs: None
     """
     # Expensive to compute -- just cache output 1st time
-    if CACHE_PATH.exists():
-        with open(CACHE_PATH, "rb") as f:
+    if CACHE_PATH_SIF.exists():
+        with open(CACHE_PATH_SIF, "rb") as f:
             return pickle.load(f)
         
     # breakpoint()
@@ -67,13 +68,38 @@ def _symbolic_information_flow()-> Tuple[sp.Matrix, sp.Matrix, sp.Matrix, Tuple,
     mean_symbols = (mean1, mean2, mean3, mean4)
     result = information_flow, Sigma_t, mean_t, symbols, mean_symbols 
 
-    CACHE_PATH.parent.mkdir(exist_ok=True)
-    with open(CACHE_PATH, "wb") as f:
+    CACHE_PATH_SIF.parent.mkdir(exist_ok=True)
+    with open(CACHE_PATH_SIF, "wb") as f:
         pickle.dump(result, f)
     return result
 
-# def _normalised_information_flow():
-    # information_flow, Sigma_t, mean_t, (tau, tau_0, beta, K, mu, s11, s22, s33, s44), (mean1, mean2, mean3, mean4) = _symbolic_information_flow()
+def _normalised_information_flow():
+
+    if CACHE_PATH_NSIF.exists():
+        with open(CACHE_PATH_NSIF, "rb") as f:
+            return pickle.loaf(f)
+
+    information_flow, sigma_t, mean_t, symbols, mean_symbols = _symbolic_information_flow()
+    (tau, tau_0, beta, K, mu, s11, s22, s33, s44) = symbols 
+    A = sp.Matrix([
+        [0, 1, 0, 0],
+        [-1, -beta, -mu*(K**2), 0],
+        [0, 0, 0, 1],
+        [0, 0, -K**2, 0],
+    ])
+
+    normalised_information_flow = sp.Matrix(
+        information_flow.rows,
+        information_flow.cols,
+        lambda i, j: 0 if A[i, j] == 0 else (
+            information_flow[i, j]/(sp.Abs(A[j, j]) + sp.Abs(sum(information_flow[:, j])))
+        )
+    )
+
+    with open(CACHE_PATH_NSIF, "wb") as f:
+        pickle.dump(normalised_information_flow, f)
+
+    return normalised_information_flow
 
 
 def build_time_integral_fn(tau_init: jax.Array, sigma_init: Tuple[float]) -> sp.Matrix:

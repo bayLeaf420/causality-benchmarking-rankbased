@@ -18,7 +18,7 @@ def test_simple_plot():
     key = jax.random.key(29)
 
     mean_init = (1.0, 0.0, 0.0, 1.53)
-    sigma_init = (0.1, 0.1, 0.1, 0.1)
+    sigma_init = (0.05, 0.05, 0.05, 0.05)
 
     func_inputs = (n_r, params_dict, tau_init, mean_init, sigma_init, key)
 
@@ -76,9 +76,9 @@ def test_eigvals():
 if __name__=="__main__":
     st = time.perf_counter()
 
-    # test_simple_plot()
+    test_simple_plot()
     # test_check_eigvals()
-    test_lambdify()
+    # test_lambdify()
     # test_eigvals()
 
     et = time.perf_counter()

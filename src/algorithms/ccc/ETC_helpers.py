@@ -97,6 +97,33 @@ def substitute(
 
     return out[:max_length]
 
+def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarray:
+    """
+    Inputs:
+    1. x: 
+
+    Outputs:
+    1. 
+    Takes in floating point jax array, outputs symbolic sequence in [1, num_bins]
+    dtype int32.
+
+    VMapping: axis 0 is perpendicular to the time direction. axis 1 is time. 
+    So, num_bins will look like: np.array([bins_cause, bins_effect], dtype=np.int32)
+    """
+    # breakpoint()
+    if x.shape[-1] != max_length:
+        raise ValueError(f"x shape is different than max value.\nx.shape = {x.shape}\nmax_length = {max_length}")
+
+    x_min = jnp.min(x)
+    x_max = jnp.max(x)
+    x_range = x_max - x_min
+    jax.debug.callback(
+        lambda r: (_ for _ in ()).throw(ValueError("x_range is <= 0")) if r <= 0 else None, x_range
+    )
+    
+    x_norm = jnp.where(x != -1, (x - x_min) / x_range, -1)
+    return (jnp.floor(x_norm * (num_bins - 1))).astype(jnp.int32)
+
 @partial(jax.jit, static_argnums=(1,))
 def dimensionsToOne(symSeqMatrix: jnp.ndarray, stride: int) -> jnp.ndarray:
     """
@@ -110,4 +137,4 @@ def dimensionsToOne(symSeqMatrix: jnp.ndarray, stride: int) -> jnp.ndarray:
     Output range: [1, cause_bins * effect_bins]  →  nb_joint = cause_bins * effect_bins  ✓
     Works under jit / vmap because it contains no Python control flow.
     """
-    return (symSeqMatrix[0] - 1) * stride + symSeqMatrix[1]
+    return ((symSeqMatrix[1] - 1) * stride + symSeqMatrix[0]).astype(jnp.int32)
