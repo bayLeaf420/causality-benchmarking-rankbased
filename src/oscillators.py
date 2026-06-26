@@ -88,7 +88,7 @@ def noisy_dd_oscillator(
 
     x, A, B, C, alpha = damped_driven_oscillator(t, params)
     noise_std_dev = noise_factor  # * x.std()
-    noise = jnp.random.normal(0, noise_std_dev, x.shape)
+    noise = jax.random.normal(key, x.shape, dtype=jnp.float32) * noise_std_dev
 
     return x + noise, A, B, C, alpha
 
@@ -102,5 +102,5 @@ def noisy_driving_force(
 
     F = driving_force(t, params)
     noise_std_dev = noise_factor  # * F.std()
-    noise = jnp.random.normal(0, noise_std_dev, F.shape)
+    noise = jax.random.normal(key, F.shape, dtype=jnp.float32) * noise_std_dev
     return F + noise

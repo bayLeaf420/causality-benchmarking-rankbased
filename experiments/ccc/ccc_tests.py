@@ -18,12 +18,20 @@ def test_difference():
     data_py = data_py['arr_0']
     data_matlab = data_matlab['CCC_array'].reshape(*data_py.shape)
     print(f"MATLAB shape: {data_matlab.shape}, Python shape: {data_py.shape}")
-    
+    true_diff = data_py - data_matlab
     diff_arr = ((data_py - data_matlab)/data_matlab) * 100
 
-    non_zero_values = diff_arr[diff_arr != 1]
-    flat_data = diff_arr.ravel()
+    non_zero_values = diff_arr[diff_arr != 0]
+    flat_data = true_diff.ravel()
     print(non_zero_values)
+
+    print(f"\n True diff * 89: \n{true_diff * 90}\n")
+    print(f"\nTrue diff in int: \n{jnp.average(true_diff * 90, axis=0)}")
+
+    plt.plot(np.linspace(0.2, 4.2, 40), data_py, color='blue')
+    plt.plot(np.linspace(0.2, 4.2, 40), data_matlab, color='red')
+    plt.plot(np.linspace(0.2, 4.2, 40), true_diff, color='yellow')
+    plt.show()
 
     counts, bins, patches = plt.hist(flat_data, bins='auto', histtype='stepfilled', alpha=0.6)
     plt.xticks(bins, labels=[f"{x:.2f}" for x in bins], rotation=90, fontsize=8)
@@ -32,7 +40,7 @@ def test_difference():
     plt.grid(axis='x', color='red', linestyle='--', alpha=0.5) 
     plt.grid(axis='y', alpha=0.3)
 
-    plt.xlabel('Error in JAX CCC (% age)')
+    plt.xlabel('Error in JAX CCC')
     plt.ylabel('Frequency')
     plt.tight_layout()
     plt.show()

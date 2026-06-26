@@ -7,7 +7,19 @@ def find_pairs_fixed_length(
     input_array: jnp.ndarray,
     max_length: int,
     num_bins: int,
-) -> tuple[jnp.ndarray, int, jnp.ndarray]:
+) -> tuple[jnp.ndarray, int, jnp.ndarray, float]:
+    """
+    Inputs:
+    1. input_array: Jax array consisting of [valid_symbols -1 ... -1]
+    2. max_length: Length of input_array. It is the length at which ETC algorithm began. 
+    3. num_bins: INITIAL number of bins at which our symbolic sequence began. 
+
+    Outputs:
+    1. most_freq_pair: Most frequent pair in the form of a jax array. If a tie, lower hash chosen.
+    2. count: Number of times the most_freq_pair occurs
+    3. hashed_safe: Hash values of pairs after validity mask has been applied.
+    4. 
+    """
 
     M = max_length + num_bins
     first = input_array[:-1]
@@ -43,6 +55,13 @@ def find_pairs_fixed_length(
     # unique[0] may be -1; if so, set its count to 0
     counts = jnp.where(unique != -1, counts, 0)
 
+    N = jnp.sum(counts) 
+    shannon_entropy_1 = jnp.where(
+        N > 0,
+        -jnp.sum(jnp.where(counts != 0, (counts / N) * jnp.log2(counts / N), 0.0)),
+        0.0,
+        )
+
     # Handle no valid pairs
     L = jnp.sum(valid_symbols.astype(jnp.int32))
     no_pairs = (L < 2) | (jnp.sum(final_valid) == 0)
@@ -56,7 +75,7 @@ def find_pairs_fixed_length(
                                jnp.array([a, b], dtype=input_array.dtype))
     count = jnp.where(no_pairs, 0, counts[max_idx])
 
-    return most_freq_pair, count, hashed_safe
+    return most_freq_pair, count, hashed_safe, shannon_entropy_1
 
 @partial(jax.jit, static_argnums=(1, 2))
 def substitute(
@@ -100,7 +119,7 @@ def substitute(
 def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarray:
     """
     Inputs:
-    1. x: 
+    1. x: shape(L,) use vmap if required. 
 
     Outputs:
     1. 
@@ -122,7 +141,7 @@ def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarra
     )
     
     x_norm = jnp.where(x != -1, (x - x_min) / x_range, -1)
-    return (jnp.floor(x_norm * (num_bins - 1))).astype(jnp.int32)
+    return (jnp.floor(x_norm * (num_bins - 1)) + 1).astype(jnp.int32)
 
 @partial(jax.jit, static_argnums=(1,))
 def dimensionsToOne(symSeqMatrix: jnp.ndarray, stride: int) -> jnp.ndarray:

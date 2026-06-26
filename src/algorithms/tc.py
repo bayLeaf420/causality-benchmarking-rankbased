@@ -92,7 +92,7 @@ def _normalised_information_flow():
         information_flow.rows,
         information_flow.cols,
         lambda i, j: 0 if A[i, j] == 0 else (
-            information_flow[i, j]/(sp.Abs(A[j, j]) + sp.Abs(sum(information_flow[:, j])))
+            sp.Abs(information_flow[i, j]/(sp.Abs(A[j, j]) + sp.Abs(sum(information_flow[:, j]))))
         )
     )
 
