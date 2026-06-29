@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+# import numpy as np
 from functools import partial 
 from typing import Tuple
 
@@ -37,6 +38,11 @@ def ETC_jit(input_data, max_length, num_bins, H_1_tolerance, is_joint=False):
 
     # sym_seq = bin_timeseries(input_data, max_length, num_bins) # BIN timeseries, important
     initial_valid_len = jnp.sum(sym_seq != -1)
+
+    jax.debug.callback(
+        lambda v, m: (_ for _ in ()).throw(ValueError(f"initial_valid_len={v} != max_length={m}")) if v != m else None,
+        initial_valid_len, max_length
+    )
 
     def body(_, state):
         seq, iters = state
@@ -101,16 +107,17 @@ def CCC_calculation(
     if past + present > max_length:
         raise ValueError("past + present are greater than time-series initial size")
 
-    num_wins = (max_length - (past + present)) // jump # Last smol window will be ignored
+    num_wins = (max_length - (past + present)) // jump + 1# Last smol window will be ignored
     
     # Split input data into cause and effect matrices
     cause_vector = jax.lax.slice(input_data, (0, 0), (1, max_length)).reshape(max_length) # Shape is (1, L)
     effect_vector = jax.lax.slice(input_data, (1, 0), (2, max_length)).reshape(max_length)
+    jax.debug.print("Cause vec: {}\neffect vec: {}", cause_vector[0:10], effect_vector[0:10])
     # Extract bins
     cause_bins = num_bins[0]
     effect_bins = num_bins[1]
     # joint_bins = cause_bins * effect_bins
-
+   
     # MAKE JOINT AT THE BEGINNING ITSELF DON'T MAKE IT EVERY ITERATION
     # joint_vector = dimensionsToOne(input_data, int(effect_bins)).reshape(-1) # Shape is again (1, L)
 
@@ -131,7 +138,7 @@ def CCC_calculation(
             dtype=jnp.float32,
             ),
             past + present, 
-            (max(cause_bins, effect_bins), effect_bins),
+            (cause_bins, effect_bins),
             H_1_tolerance,
             is_joint=True,
         )
@@ -150,15 +157,15 @@ def CCC_calculation(
 
         causal_dynamic_complexity = ETC_joint_full - ETC_joint_past 
         control_dynamic_complexity = ETC_effect_full - ETC_effect_past
-        """
-        jax.debug.print(
-            "ETC_joint_full: {}\nETC_joint_past: {}\nETC_effect_full: {}\nETC_effect_past: {}",
-            ETC_joint_full,
-            ETC_joint_past,
-            ETC_effect_full,
-            ETC_effect_past,                        
-            )
-        """
+        
+        # jax.debug.print(
+        #     "ETC_joint_full: {}\nETC_joint_past: {}\nETC_effect_full: {}\nETC_effect_past: {}",
+        #     ETC_joint_full,
+        #     ETC_joint_past,
+        #     ETC_effect_full,
+        #     ETC_effect_past,                        
+        #    )
+        
         CCC_val = - causal_dynamic_complexity + control_dynamic_complexity
 
         return CCC_val

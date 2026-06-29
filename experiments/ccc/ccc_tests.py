@@ -25,12 +25,13 @@ def test_difference():
     flat_data = true_diff.ravel()
     print(non_zero_values)
 
-    print(f"\n True diff * 89: \n{true_diff * 90}\n")
+    print(f"\n True diff : \n{true_diff}\n")
     print(f"\nTrue diff in int: \n{jnp.average(true_diff * 90, axis=0)}")
 
-    plt.plot(np.linspace(0.2, 4.2, 40), data_py, color='blue')
-    plt.plot(np.linspace(0.2, 4.2, 40), data_matlab, color='red')
-    plt.plot(np.linspace(0.2, 4.2, 40), true_diff, color='yellow')
+    plt.plot(np.linspace(0.2, 4.2, 40), data_py, color='blue', label="Python")
+    plt.plot(np.linspace(0.2, 4.2, 40), data_matlab, color='red', label="MATLAB")
+    plt.plot(np.linspace(0.2, 4.2, 40), true_diff, color='yellow', label="Difference")
+    plt.legend()
     plt.show()
 
     counts, bins, patches = plt.hist(flat_data, bins='auto', histtype='stepfilled', alpha=0.6)

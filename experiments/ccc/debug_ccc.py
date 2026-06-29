@@ -8,11 +8,12 @@ def test_ETC():
     key = jax.random.key(28)
     tol = 1e-6
     sym_seq = jax.random.normal(key, (14,), dtype=jnp.float32)
+    sym_seq = jnp.array([1.5, 1.5, 3.0, 3.0, 8.9, 7.23, 4.56,5.55, 2.10, -1.2, -1.56, 0.33, 0.76])
     print(sym_seq)
     # sym_seq = jnp.ones((10,), dtype=jnp.float32)
     # sym_seq = sym_seq.at[2].set(3.0)
     max_length = int(sym_seq.shape[0])
-    num_bins = 12 #int(jnp.max(sym_seq))
+    num_bins = 24 #int(jnp.max(sym_seq))
     print(num_bins)
 
     final_seq, iters, normal_N = ccc.ETC_jit(sym_seq, max_length, num_bins, tol)
@@ -30,8 +31,9 @@ def test_CCC():
     print(mean, arr)
 
 def test_binning_timeseries():
-    x = jnp.array([1.0, 2.33, 4.55, 0.9, 0.02, -0.3, 10.0])
-    binned = etc.bin_timeseries(x, 7, 12)
+    # x = jnp.array([1.0, 2.33, 4.55, 0.9, 0.02, -0.3, 10.0])
+    x = jnp.ones((10,), dtype=jnp.float32)
+    binned = etc.bin_timeseries(x, 10, 12)
     print(binned)
 
 

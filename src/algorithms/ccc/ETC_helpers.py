@@ -44,17 +44,23 @@ def find_pairs_fixed_length(
     final_valid = keep_different | (equal_pair & keep_equal)
 
     # Hash valid pairs, set invalid ones to -1
-    hashed = first * M + second
+    hashed = second * M + first
+    # hash_indices = jnp.arange(max_length - 1)
+
     hashed_safe = jnp.where(final_valid, hashed, -1)
 
     # Sort and count frequencies with jnp.unique
-    unique, counts = jnp.unique(
-        hashed_safe, return_counts=True, size=max_length - 1
+    unique, _, counts = jnp.unique(
+        hashed_safe, return_counts=True, size=max_length - 1, fill_value=0, return_index=True,
     )
     # Ignore the bin for -1 (which will be first if present)
     # unique[0] may be -1; if so, set its count to 0
     counts = jnp.where(unique != -1, counts, 0)
 
+    # Additionally, priority value tells apart first occuring index.
+    M2 = M**2
+    priorities = jnp.where(unique != -1, counts * M2 - unique, 0)
+    
     N = jnp.sum(counts) 
     shannon_entropy_1 = jnp.where(
         N > 0,
@@ -66,13 +72,17 @@ def find_pairs_fixed_length(
     L = jnp.sum(valid_symbols.astype(jnp.int32))
     no_pairs = (L < 2) | (jnp.sum(final_valid) == 0)
 
-    max_idx = jnp.argmax(counts)
+    max_idx = jnp.argmax(priorities)
     max_hash = unique[max_idx]
     a = max_hash // M
     b = max_hash % M
-    most_freq_pair = jnp.where(no_pairs,
-                               jnp.array([-1, -1], dtype=input_array.dtype),
-                               jnp.array([a, b], dtype=input_array.dtype))
+
+    most_freq_pair = jnp.where(
+        no_pairs,
+        jnp.array([-1, -1], dtype=input_array.dtype),
+        jnp.array([a, b], dtype=input_array.dtype)
+    )
+
     count = jnp.where(no_pairs, 0, counts[max_idx])
 
     return most_freq_pair, count, hashed_safe, shannon_entropy_1
@@ -135,13 +145,15 @@ def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarra
 
     x_min = jnp.min(x)
     x_max = jnp.max(x)
-    x_range = x_max - x_min
+    x_range = x_max - x_min + 1e-6
+    # x_range = jnp.where(x_range != 0, x_range, jnp.abs(x_max))
+    delta = x_range/num_bins
     jax.debug.callback(
         lambda r: (_ for _ in ()).throw(ValueError("x_range is <= 0")) if r <= 0 else None, x_range
     )
     
-    x_norm = jnp.where(x != -1, (x - x_min) / x_range, -1)
-    return (jnp.floor(x_norm * (num_bins - 1)) + 1).astype(jnp.int32)
+    x_binned = jnp.where(x != -1, (x - x_min) / delta, -1)
+    return jnp.floor(x_binned).astype(jnp.int32)
 
 @partial(jax.jit, static_argnums=(1,))
 def dimensionsToOne(symSeqMatrix: jnp.ndarray, stride: int) -> jnp.ndarray:
@@ -156,4 +168,4 @@ def dimensionsToOne(symSeqMatrix: jnp.ndarray, stride: int) -> jnp.ndarray:
     Output range: [1, cause_bins * effect_bins]  →  nb_joint = cause_bins * effect_bins  ✓
     Works under jit / vmap because it contains no Python control flow.
     """
-    return ((symSeqMatrix[1] - 1) * stride + symSeqMatrix[0]).astype(jnp.int32)
+    return (symSeqMatrix[0] * stride + symSeqMatrix[1]).astype(jnp.int32)

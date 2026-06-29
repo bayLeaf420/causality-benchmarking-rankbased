@@ -1,38 +1,50 @@
 #include <iostream>
+#include <set>
 #include <vector>
-#include <utility>
-#include <cstdint>
+#include <map>
+#include <stack>
 
-class ETC_Node
-{
 /*
-Custom class made to store a 'node' used during ETC iterations.
+We store 3 things:
+    1. original array where we insert -1s for numbers removed during pair compression.
+    2. std::multimap where the key_value = hash and values = indice pairs.
 */
+class Dynamic_Node
+{
 private:
-    uint16_t hash_value;
-    std::pair<uint16_t, uint16_t> indices;
+    // std::vector<int> sequence;
+    // std::vector<int> hashed_pair_sequence;
+    int priority_value;
+    std::stack<std::pair<int, int>> indices_list;
 
 public:
-    // Functions to access hash and indices
-    uint16_t get_hash()
-    {
-        return hash_value;
+    int _get_priority_value(){
+        return priority_value;
     }
-    std::pair<uint16_t, uint16_t> get_indices()
-    {
-        return indices;
-    }
+    
 
-    // Functions to set hash and indices
-    void set_hash(uint16_t val)
-    {
-        hash_value = val;
-        return;
+    int _initialise(int priority_value, std::pair<int, int> indices){
+
     }
-    void set_indices(uint16_t val1, uint16_t val2)
-    {
-        indices.first = val1;
-        indices.second = val2;
-        return;
-    }
+};
+
+class Dynamic_Symbolic_Sequence{
+    /*
+    Here I will implement the following things:
+
+    1. A function to construct the hash vector, and the BST Tree consisting of DynamicNodes. 
+    2. A function to substitute the most frequently occuring pair in the sequence with a new one. 
+
+    This is all, because a) Binning, b) Tracking of bins, and c) Passing in max_length, will be done 
+    inside the ETC function. 
+
+    This will include data structures:
+    1. A vector which is of shape (max_hash_value,) where at the indice [hash1] there will be a pointer or
+    indice to the Dynamic Node in the BST Tree corresponding to that hash value. 
+    2. The std::set containing DynamicNode objects
+
+    */
+private:
+    vector<int>
+   
 };
