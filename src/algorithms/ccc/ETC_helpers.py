@@ -1,6 +1,9 @@
 import jax
+
+jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-from functools import partial 
+from functools import partial
+
 
 @partial(jax.jit, static_argnums=(1, 2))
 def find_pairs_fixed_length(
@@ -11,14 +14,14 @@ def find_pairs_fixed_length(
     """
     Inputs:
     1. input_array: Jax array consisting of [valid_symbols -1 ... -1]
-    2. max_length: Length of input_array. It is the length at which ETC algorithm began. 
-    3. num_bins: INITIAL number of bins at which our symbolic sequence began. 
+    2. max_length: Length of input_array. It is the length at which ETC algorithm began.
+    3. num_bins: INITIAL number of bins at which our symbolic sequence began.
 
     Outputs:
     1. most_freq_pair: Most frequent pair in the form of a jax array. If a tie, lower hash chosen.
     2. count: Number of times the most_freq_pair occurs
     3. hashed_safe: Hash values of pairs after validity mask has been applied.
-    4. 
+    4.
     """
 
     M = max_length + num_bins
@@ -28,10 +31,9 @@ def find_pairs_fixed_length(
 
     # Overlap rule (equal‑symbol pairs)
     valid_symbols = input_array != -1
-    change_points = jnp.concatenate([
-        jnp.array([True]),
-        (input_array[1:] != input_array[:-1]) & valid_symbols[1:]
-    ])
+    change_points = jnp.concatenate(
+        [jnp.array([True]), (input_array[1:] != input_array[:-1]) & valid_symbols[1:]]
+    )
     indices = jnp.arange(max_length)
     run_starts = jnp.where(change_points, indices, 0)
     run_starts = jax.lax.cummax(run_starts)
@@ -51,7 +53,11 @@ def find_pairs_fixed_length(
 
     # Sort and count frequencies with jnp.unique
     unique, _, counts = jnp.unique(
-        hashed_safe, return_counts=True, size=max_length - 1, fill_value=0, return_index=True,
+        hashed_safe,
+        return_counts=True,
+        size=max_length - 1,
+        fill_value=0,
+        return_index=True,
     )
     # Ignore the bin for -1 (which will be first if present)
     # unique[0] may be -1; if so, set its count to 0
@@ -60,13 +66,13 @@ def find_pairs_fixed_length(
     # Additionally, priority value tells apart first occuring index.
     M2 = M**2
     priorities = jnp.where(unique != -1, counts * M2 - unique, 0)
-    
-    N = jnp.sum(counts) 
+
+    N = jnp.sum(counts)
     shannon_entropy_1 = jnp.where(
         N > 0,
         -jnp.sum(jnp.where(counts != 0, (counts / N) * jnp.log2(counts / N), 0.0)),
         0.0,
-        )
+    )
 
     # Handle no valid pairs
     L = jnp.sum(valid_symbols.astype(jnp.int32))
@@ -74,18 +80,19 @@ def find_pairs_fixed_length(
 
     max_idx = jnp.argmax(priorities)
     max_hash = unique[max_idx]
-    a = max_hash // M
-    b = max_hash % M
+    b = max_hash // M
+    a = max_hash % M
 
     most_freq_pair = jnp.where(
         no_pairs,
         jnp.array([-1, -1], dtype=input_array.dtype),
-        jnp.array([a, b], dtype=input_array.dtype)
+        jnp.array([a, b], dtype=input_array.dtype),
     )
 
     count = jnp.where(no_pairs, 0, counts[max_idx])
 
     return most_freq_pair, count, hashed_safe, shannon_entropy_1
+
 
 @partial(jax.jit, static_argnums=(1, 2))
 def substitute(
@@ -98,14 +105,13 @@ def substitute(
     # new symbol = current maximum + 1  (correctly increments each iteration)
     new_sym = jnp.max(sym_seq) + 1
     a, b = most_freq_pair[0], most_freq_pair[1]
-    M = max_length + num_bins 
-    pair_hash = a * M + b
+    M = max_length + num_bins
+    pair_hash = b * M + a
 
     # Second element of each replaced pair
-    swap_mask = jnp.concatenate([
-        jnp.array([False], dtype=bool),
-        hashed_array == pair_hash
-    ])
+    swap_mask = jnp.concatenate(
+        [jnp.array([False], dtype=bool), hashed_array == pair_hash]
+    )
 
     # First element of replaced pair → new_sym
     first_of_pair = jnp.roll(swap_mask, shift=-1).at[-1].set(False)
@@ -115,7 +121,7 @@ def substitute(
 
     # Compute destination indices for kept elements
     # cumsum gives 1‑based index where each kept element goes
-    dest = jnp.cumsum(keep_mask) - 1                  # 0‑based
+    dest = jnp.cumsum(keep_mask) - 1  # 0‑based
     # Write non‑kept elements into a trash bin at index max_length
     indices_to_write = jnp.where(keep_mask, dest, max_length)
     values_to_write = jnp.where(keep_mask, modified_seq, 0)
@@ -126,34 +132,41 @@ def substitute(
 
     return out[:max_length]
 
+
 def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarray:
     """
     Inputs:
-    1. x: shape(L,) use vmap if required. 
+    1. x: shape(L,) use vmap if required.
 
     Outputs:
-    1. 
+    1.
     Takes in floating point jax array, outputs symbolic sequence in [1, num_bins]
     dtype int32.
 
-    VMapping: axis 0 is perpendicular to the time direction. axis 1 is time. 
+    VMapping: axis 0 is perpendicular to the time direction. axis 1 is time.
     So, num_bins will look like: np.array([bins_cause, bins_effect], dtype=np.int32)
     """
     # breakpoint()
     if x.shape[-1] != max_length:
-        raise ValueError(f"x shape is different than max value.\nx.shape = {x.shape}\nmax_length = {max_length}")
+        raise ValueError(
+            f"x shape is different than max value.\nx.shape = {x.shape}\nmax_length = {max_length}"
+        )
 
     x_min = jnp.min(x)
     x_max = jnp.max(x)
     x_range = x_max - x_min + 1e-6
     # x_range = jnp.where(x_range != 0, x_range, jnp.abs(x_max))
-    delta = x_range/num_bins
+    delta = x_range / num_bins
     jax.debug.callback(
-        lambda r: (_ for _ in ()).throw(ValueError("x_range is <= 0")) if r <= 0 else None, x_range
+        lambda r: (
+            (_ for _ in ()).throw(ValueError("x_range is <= 0")) if r <= 0 else None
+        ),
+        x_range,
     )
-    
+
     x_binned = jnp.where(x != -1, (x - x_min) / delta, -1)
     return jnp.floor(x_binned).astype(jnp.int32)
+
 
 @partial(jax.jit, static_argnums=(1,))
 def dimensionsToOne(symSeqMatrix: jnp.ndarray, stride: int) -> jnp.ndarray:

@@ -39,6 +39,7 @@ def damped_driven_oscillator(t: jnp.array, params: jnp.array):
 
     return x, A, B, C, alpha
 
+
 def damped_driven_oscillator_numpy(t, params):
     k = params[0]
     b = params[1]
@@ -50,11 +51,11 @@ def damped_driven_oscillator_numpy(t, params):
 
     alpha = b / (2 * m)
     omega_0 = (k / m) ** 0.5
-    
+
     # Amplitude and phase phase shift of the steady-state driving force response
     C = F0 / ((omega_0**2 - omega**2) ** 2 + ((b * omega) / m) ** 2) ** 0.5
     phi = np.arctan2(b * omega, m * (omega_0**2 - omega**2))
-    
+
     # Integration constants determined by initial conditions
     D = (v0 + alpha * x0 - alpha * C * np.exp(1j * phi)) / (1j * omega)
     A = (x0 - C * np.exp(1j * phi) + D) / 2
@@ -66,7 +67,8 @@ def damped_driven_oscillator_numpy(t, params):
     else:
         # Underdamped / Overdamped general analytical form
         x = np.real(
-            np.exp(-alpha * t) * (A * np.exp(1j * omega_0 * t) + B * np.exp(-1j * omega_0 * t))
+            np.exp(-alpha * t)
+            * (A * np.exp(1j * omega_0 * t) + B * np.exp(-1j * omega_0 * t))
             + C * np.exp(1j * phi) * np.exp(1j * omega * t)
         )
 

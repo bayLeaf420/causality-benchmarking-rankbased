@@ -1,16 +1,18 @@
 import jax
+
+jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 # from scipy.io import savemat
 
-from algorithms.ccc.ETC_and_CCC import CCC_calculation #, bin_timeseries
+from algorithms.ccc.ETC_and_CCC import CCC_calculation  # , bin_timeseries
 from oscillators import damped_driven_oscillator, driving_force
 
-t = jnp.linspace(0, 10, 2000)
-n_curves = 40
-omega_vals = jnp.linspace(0.2, 4.2, n_curves)
+t = jnp.linspace(0, 20, 2000)
+n_curves = 80
+omega_vals = jnp.linspace(0.2, 6.2, n_curves)
 
 x = jnp.zeros((n_curves, 2000))
 F = jnp.zeros((n_curves, 2000))
@@ -23,7 +25,7 @@ keys0 = jax.random.split(key0, n_curves)
 keys1 = jax.random.split(key1, n_curves)
 noise_factor = 0.1
 for i, w in enumerate(omega_vals):
-    params[-1] = w # Last one of params is omega
+    params[-1] = w  # Last one of params is omega
     # x_i, A, B, C, alpha = noisy_dd_oscillator(t, params, noise_factor, keys0[i])
     x_i, A, B, C, alpha = damped_driven_oscillator(t, params)
     C = jnp.abs(jnp.real(C))
@@ -53,7 +55,7 @@ for i in range(n_curves):
     curr_data = curr_data.reshape(2, 2000)
     # print(f"\n{'='*50}\nCurrent data shape is {curr_data.shape}\n{'='*50}\n")
     # if curr_data != (2, 500):
-        # raise ValueError("Current data has wrong dims")
+    # raise ValueError("Current data has wrong dims")
     CCC_mean[i], _ = CCC_calculation(curr_data, (90, 90, 90), (12, 12), H_1_tolerance)
 et = time.time()
 

@@ -7,14 +7,14 @@ from functools import partial
 
 from algorithms.tc import _symbolic_information_flow, _normalised_information_flow
 
-# Will have a function to build lambdified function of beta, K, mu and tau. 
-# tau_0 and covariances will remain fixed. 
+# Will have a function to build lambdified function of beta, K, mu and tau.
+# tau_0 and covariances will remain fixed.
 # Integration along tau
 
 
 def _build_lambda_fns(
-        tau_init: Tuple[float, float, int], sigma_init: Tuple[float]
-    )->List[List[Callable]]:
+    tau_init: Tuple[float, float, int], sigma_init: Tuple[float]
+) -> List[List[Callable]]:
     """
     Inputs:
     1. tau_init: consists of (tau_start, tau_end, N)
@@ -28,34 +28,45 @@ def _build_lambda_fns(
     tau, tau_0, beta, K, mu, s11, s22, s33, s44 = symbols
 
     # Fix tau_0 and initial variances to numeric value
-    information_flow = information_flow.subs([
-        (tau_0, float(tau_init[0])), 
-        (s11, float(sigma_init[0])),
-        (s22, float(sigma_init[1])),
-        (s33, float(sigma_init[2])),
-        (s44, float(sigma_init[3])),
-        ])
-    
-    norm_info_flow = norm_info_flow.subs([
-        (tau_0, float(tau_init[0])), 
-        (s11, float(sigma_init[0])),
-        (s22, float(sigma_init[1])),
-        (s33, float(sigma_init[2])),
-        (s44, float(sigma_init[3])),
-        ])
-    
+    information_flow = information_flow.subs(
+        [
+            (tau_0, float(tau_init[0])),
+            (s11, float(sigma_init[0])),
+            (s22, float(sigma_init[1])),
+            (s33, float(sigma_init[2])),
+            (s44, float(sigma_init[3])),
+        ]
+    )
+
+    norm_info_flow = norm_info_flow.subs(
+        [
+            (tau_0, float(tau_init[0])),
+            (s11, float(sigma_init[0])),
+            (s22, float(sigma_init[1])),
+            (s33, float(sigma_init[2])),
+            (s44, float(sigma_init[3])),
+        ]
+    )
+
     req_symbols = (tau, beta, K, mu)
     lambda_information_flow = [
-        [sp.lambdify(req_symbols, information_flow[i, j], modules='jax') for j in range(information_flow.cols)]
+        [
+            sp.lambdify(req_symbols, information_flow[i, j], modules="jax")
+            for j in range(information_flow.cols)
+        ]
         for i in range(information_flow.rows)
     ]
     lambda_norm_info = [
-        [sp.lambdify(req_symbols, norm_info_flow[i, j], modules='jax') for j in range(norm_info_flow.cols)]
+        [
+            sp.lambdify(req_symbols, norm_info_flow[i, j], modules="jax")
+            for j in range(norm_info_flow.cols)
+        ]
         for i in range(norm_info_flow.rows)
     ]
 
     return lambda_information_flow, lambda_norm_info
-    
+
+
 # First vmap is (beta_n, K_n, mu_n, 3) -> (K_n, mu_n, 3)
 # Second is (K_n, mu_n, 3) -> (mu_n, 3)
 # Third is (mu_n, 3) -> (3,)
@@ -63,22 +74,22 @@ def _build_lambda_fns(
 @partial(jax.vmap, in_axes=(0, None, None))
 @partial(jax.vmap, in_axes=(0, None, None))
 def time_integrals(
-        params_tensor: jax.Array,
-        tau_init: Tuple[float, float, int],
-        lambda_information_flow: List[List[Callable]],
-        lambda_norm_info: List[List[Callable]],
+    params_tensor: jax.Array,
+    tau_init: Tuple[float, float, int],
+    lambda_information_flow: List[List[Callable]],
+    lambda_norm_info: List[List[Callable]],
 ) -> jax.Array:
     """
     Inputs:
     1. params_tensor.
-    2. tau_init: tuple of (tau_start, tau_end, tau_nums) 
+    2. tau_init: tuple of (tau_start, tau_end, tau_nums)
     3. lambda_information_flow: Information flow matrix (List of List) of lambda functions.Build in
                                 implementation script
     Outputs:
     1. integrals_tensor: matrix of integrals. Same shape as params_tensor
 
     Points:
-    Input into any element of lambda_information_flow is of form (tau, beta, K, mu). 
+    Input into any element of lambda_information_flow is of form (tau, beta, K, mu).
     """
     beta = params_tensor[0]
     K = params_tensor[1]

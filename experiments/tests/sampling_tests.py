@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sampling import _lambdify_oscillator
 
+
 def test_lambdify_1():
     tau_init = (0.0, 10.0, 200)
     mean_init = (0.8, 0.0, 0.0, 1.5)
@@ -10,7 +11,7 @@ def test_lambdify_1():
     beta, K, mu = 1.0, 2.3, 0.4
 
     vectorised_mean = np.vectorize(mean_lambda)
-    # vectorised_std_dev = 
+    # vectorised_std_dev =
     tau_vec = np.linspace(tau_init[0], tau_init[1], tau_init[2])
     mean_vec = vectorised_mean(tau_vec, beta, K, mu)[1]
 
@@ -18,8 +19,8 @@ def test_lambdify_1():
     axes[0].plot(tau_vec, mean_vec)
     # axes[1].plot
 
-    return None 
+    return None
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     test_lambdify_1()
-

@@ -1,15 +1,15 @@
 #include <iostream>
 #include <set>
 #include <vector>
-#include <map>
-#include <stack>
+#include <list>
+#include <algorithm>
 
 /*
 We store 3 things:
     1. original array where we insert -1s for numbers removed during pair compression.
     2. std::multimap where the key_value = hash and values = indice pairs.
 */
-class Dynamic_Node
+class DynamicNode
 {
 private:
     // std::vector<int> sequence;
@@ -18,17 +18,17 @@ private:
     std::stack<std::pair<int, int>> indices_list;
 
 public:
-    int _get_priority_value(){
+    int get_priority_value(){
         return priority_value;
     }
     
 
-    int _initialise(int priority_value, std::pair<int, int> indices){
+    int initialise(int priority_value, std::pair<int, int> indices){
 
     }
 };
 
-class Dynamic_Symbolic_Sequence{
+class EffortToCompressTracker{
     /*
     Here I will implement the following things:
 
@@ -48,3 +48,20 @@ private:
     vector<int>
    
 };
+
+int effort_to_compress(std::vector<float> float_sequence, int num_bins){
+    /*
+    1. Bin the array
+    2. Sort the array 
+    3. Build the ETC Tracker data structure. 
+    4. Run the substitution loop until size of set is just one.   
+    */
+
+    int sequence_length = float_sequence.size(); // Get the length of inputted sequence
+
+    std::vector<int> symbolic_sequence = bin_sequence(float_sequence, num_bins); // Bin the sequence.
+
+    EffortToCompressTracker etc_state;
+    etc_state.build_tracker();
+    
+}
