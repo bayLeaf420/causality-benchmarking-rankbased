@@ -9,8 +9,8 @@ from functools import partial  # , lru_cache
 # @lru_cache(maxsize=None)
 def _lambdify_oscillator(
     tau_init: Tuple[float, float, int],
-    mean_init: Tuple[float],  # 4 floats
-    sigma_init: Tuple[float],  # 4 floats
+    mean_init: Tuple[float, ...],  # 4 floats
+    sigma_init: Tuple[float, ...],  # 4 floats
 ) -> Tuple[Callable, Callable]:
 
     _, sigma_expr, mean_expr, symbols, mean_symbols = _symbolic_information_flow()
@@ -104,8 +104,8 @@ def sample_oscillator_tensor(
     n_realisations: int,
     params_dict: Dict[str, Tuple[float, float, int]],
     tau_init: Tuple[float, float, int],
-    mean_init: Tuple[float],  # 4 floats
-    sigma_init: Tuple[float],  # 4 floats
+    mean_init: Tuple[float, ...],  # 4 floats
+    sigma_init: Tuple[float, ...],  # 4 floats
     key: jax.Array,
 ) -> jax.Array:
     """
