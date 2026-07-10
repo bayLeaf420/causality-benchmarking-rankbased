@@ -5,7 +5,7 @@ import jax
 """Defining Oscillators"""
 
 
-def damped_driven_oscillator(t: jnp.array, params: jnp.array):
+def damped_driven_oscillator(t: jax.Array, params: jax.Array):
     k = params[0]
     b = params[1]
     m = params[2]
@@ -82,10 +82,10 @@ def driving_force(t, params):
 
 
 def noisy_dd_oscillator(
-    t: jnp.array,
-    params: jnp.array,
+    t: jax.Array,
+    params: jax.Array,
     noise_factor: float,
-    key: jax.random.PRNGKey,
+    key: jax.Array,
 ) -> tuple:
 
     x, A, B, C, alpha = damped_driven_oscillator(t, params)
@@ -96,11 +96,11 @@ def noisy_dd_oscillator(
 
 
 def noisy_driving_force(
-    t: jnp.array,
-    params: jnp.array,
+    t: jax.Array,
+    params: jax.Array,
     noise_factor: float,
-    key: jax.random.PRNGKey,
-) -> tuple:
+    key: jax.Array,
+) -> jax.Array:
 
     F = driving_force(t, params)
     noise_std_dev = noise_factor  # * F.std()

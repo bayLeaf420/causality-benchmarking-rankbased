@@ -1,10 +1,10 @@
 import sympy as sp
 import jax
 import jax.numpy as jnp
-from typing import Tuple, Callable, Dict
-from algorithms.tc import _symbolic_information_flow
+from typing import Tuple, Callable
 from functools import partial  # , lru_cache
 
+from algorithms.tc import _symbolic_information_flow
 
 # @lru_cache(maxsize=None)
 def _lambdify_oscillator(
@@ -102,22 +102,22 @@ def _sample_single(
 
 def sample_oscillator_tensor(
     n_realisations: int,
-    params_dict: Dict[str, Tuple[float, float, int]],
+    params_tensor: jax.Array,
     tau_init: Tuple[float, float, int],
     mean_init: Tuple[float, ...],  # 4 floats
     sigma_init: Tuple[float, ...],  # 4 floats
     key: jax.Array,
 ) -> jax.Array:
     """
-    Inputs:
-    0. n_realisations: Number of realisations of the tensor needed.
-    1. params_dict: disctionary with keys ['beta', 'K', 'mu']
-    2. tau_init: contians tau_start, tau_end, tau_num
-    2. mean_vec: vec with mean1, mean2, mean3, mean4
-    3. sigma_vec: vec with s11, s22, s33, s44
+    Args:
+        n_realisations: Number of realisations of the tensor needed.
+        params_tensor: Tensor of shape [beta_num, K_num, mu_num, 3]
+        tau_init: contians tau_start, tau_end, tau_num
+        mean_vec: vec with mean1, mean2, mean3, mean4
+        sigma_vec: vec with s11, s22, s33, s44
 
-    Outputs:
-    oscillator_tensor: shape(n_realisations, n_beta, n_K, n_mu, N)
+    Returns:
+        oscillator_tensor: shape(n_realisations, n_beta, n_K, n_mu, tau_num)
 
     Point of this function is to take in the base input forms and output a tensor representing 1 sample drawn over param space
     """
@@ -125,22 +125,6 @@ def sample_oscillator_tensor(
     mean_lambda, sigma_lambda = _lambdify_oscillator(tau_init, mean_init, sigma_init)
     tau_vec = jnp.linspace(tau_init[0], tau_init[1], tau_init[2])
 
-    beta_vec = jnp.linspace(
-        params_dict["beta"][0], params_dict["beta"][1], params_dict["beta"][2]
-    )  # Shape (N_beta,)
-    K_vec = jnp.linspace(params_dict["K"][0], params_dict["K"][1], params_dict["K"][2])
-    mu_vec = jnp.linspace(
-        params_dict["mu"][0], params_dict["mu"][1], params_dict["mu"][2]
-    )
-
-    params_tensor = jnp.stack(
-        jnp.meshgrid(beta_vec, K_vec, mu_vec, indexing="ij"), axis=-1
-    )
-
-    key_num = beta_vec.shape[0] * K_vec.shape[0] * mu_vec.shape[0] * n_realisations
-    keys = jax.random.split(key, num=key_num)
-    keys = keys.reshape(
-        n_realisations, beta_vec.shape[0], K_vec.shape[0], mu_vec.shape[0], *key.shape
-    )
+    keys = jax.random.split(key, (n_realisations, *params_tensor.shape[:-1]))
 
     return _sample_single(params_tensor, tau_vec, mean_lambda, sigma_lambda, keys)
