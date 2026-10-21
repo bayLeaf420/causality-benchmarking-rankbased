@@ -134,4 +134,6 @@ def _normalised_information_flow():
 
     return normalised_information_flow
 
-
+if __name__=="__main__":
+    _symbolic_information_flow()
+    _normalised_information_flow()

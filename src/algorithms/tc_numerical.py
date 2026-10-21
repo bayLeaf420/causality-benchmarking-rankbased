@@ -68,6 +68,6 @@ def time_integrals(
         ),
         in_axes=(0, None, None, None),
     )
-    get_time_integrals = jax.jit(get_time_integrals, static_argnums=(1, 2, 3))
     lambda_lkif, lambda_n_lkif = _build_lambda_fns(tau_init, sigma_init)
+    get_time_integrals = jax.jit(get_time_integrals, static_argnums=(1, 2, 3))
     return get_time_integrals(params_tensor, tau_init, lambda_lkif, lambda_n_lkif)
