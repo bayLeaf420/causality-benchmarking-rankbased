@@ -1,4 +1,4 @@
-# lkif-rank-causal-bench
+# causality-benchmarking-rankbased
 
 A benchmark that tests whether heuristic causality measures rank systems in the
 same order as a known ground truth.
