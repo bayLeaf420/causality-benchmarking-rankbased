@@ -1,0 +1,10 @@
+# Bootstrap over realisations (with replacement) for CCM: resamples its stored per-realisation skills.
+extends: base.yaml
+name: bootstrap_ccm
+experiment: bootstrap
+output: results/exp_bootstrap_ccm.npz
+options:
+  seed: 0
+  point_from: results/exp_other_estimators.npz
+  steps:
+    - {name: ccm, point_key: ccm, per_realisation_from: results/exp_false_positives_ccm.npz, B: 1000}

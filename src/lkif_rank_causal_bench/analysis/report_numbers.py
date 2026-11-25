@@ -151,7 +151,25 @@ def lag_numbers(d: dict[str, Any] | None) -> tuple[Numbers | None, Numbers | Non
     return lag, exact
 
 
-def false_positive_numbers(d: dict[str, Any] | None, te: dict[str, Any] | None) -> Numbers | None:
+def pcmci_significance(d: dict[str, Any] | None, alpha: float = 0.05) -> Numbers | None:
+    """PCMCI rates from its stored p-values (smallest over 2 lags): raw, and Bonferroni-corrected by 2."""
+    if d is None or "pcmci_p" not in d:
+        return None
+    f, r = np.ravel(d["pcmci_p"]), np.ravel(d["pcmci_reverse_p"])
+    return {
+        "pcmci_p_raw": r3((f <= alpha).mean()),
+        "pcmci_rev_p_raw": r3((r <= alpha).mean()),
+        "pcmci_p_analytic": r3((2 * f <= alpha).mean()),
+        "pcmci_rev_p_analytic": r3((2 * r <= alpha).mean()),
+    }
+
+
+def false_positive_numbers(
+    d: dict[str, Any] | None,
+    te: dict[str, Any] | None,
+    ccm: dict[str, Any] | None = None,
+    pcmci: dict[str, Any] | None = None,
+) -> Numbers | None:
     """Fraction of points significant per test (rank rule p <= alpha for the surrogate tests)."""
     out: Numbers = {}
     if d is not None:
@@ -180,20 +198,31 @@ def false_positive_numbers(d: dict[str, Any] | None, te: dict[str, Any] | None) 
             te_rev_p_surrogate=r3((te["rev_p"] <= 0.05).mean()),
             te_n_points=int(len(te["fwd_p"])),
         )
+    if ccm is not None:
+        a = float(ccm["alpha"])
+        for k in ("ccm_paired_p", "ccm_rev_paired_p", "ccm_p_surrogate", "ccm_rev_p_surrogate"):
+            out[k] = r3((ccm[k] <= a).mean())
+    out.update(pcmci_significance(pcmci) or {})
     return out or None
 
 
-def bootstrap_numbers(d: dict[str, Any] | None, te: dict[str, Any] | None) -> Numbers | None:
-    """Point estimate and 2.5-97.5 % range of tau for GC, CCC and TE."""
+def bootstrap_numbers(
+    d: dict[str, Any] | None, te: dict[str, Any] | None, *others: dict[str, Any] | None
+) -> Numbers | None:
+    """Point estimate and 2.5-97.5 % range of tau for GC, CCC, TE, CCM and PCMCI."""
     ci: Numbers = {}
-    if d is not None:
-        for k in ("gc", "ccc"):
-            lo, hi = np.percentile(d[f"{k}_taus"], [2.5, 97.5], axis=0)
+    for src, keys in ((d, ("gc", "ccc")), *((o, ("ccm", "pcmci")) for o in others)):
+        if src is None:
+            continue
+        for k in keys:
+            if f"{k}_taus" not in src or not len(src[f"{k}_taus"]):
+                continue
+            lo, hi = np.percentile(src[f"{k}_taus"], [2.5, 97.5], axis=0)
             ci[k] = {
-                "point": [r3(v) for v in d[f"{k}_point"]],
+                "point": [r3(v) for v in src[f"{k}_point"]],
                 "lo": [r3(v) for v in lo],
                 "hi": [r3(v) for v in hi],
-                "B": int(len(d[f"{k}_taus"])),
+                "B": int(len(src[f"{k}_taus"])),
             }
     if te is not None and len(te["te_taus"]):
         lo, hi = np.percentile(te["te_taus"], [2.5, 97.5], axis=0)
@@ -221,10 +250,17 @@ def report_numbers(results_dir: Path = RESULTS) -> Numbers:
     nums["realisations"] = realisation_numbers(load(results_dir, "exp_realisations.npz"))
     nums["lag"], nums["exact_gc"] = lag_numbers(load(results_dir, "exp_gc_lag_statespace.npz"))
     nums["false_positives"] = false_positive_numbers(
-        load(results_dir, "exp_false_positives.npz"), load(results_dir, "exp_false_positives_te.npz")
+        load(results_dir, "exp_false_positives.npz"),
+        load(results_dir, "exp_false_positives_te.npz"),
+        load(results_dir, "exp_false_positives_ccm.npz"),
+        box,
     )
+    nums["pcmci_significance"] = {k: pcmci_significance(d) for k, d in data.items()}
     nums["bootstrap"] = bootstrap_numbers(
-        load(results_dir, "exp_bootstrap.npz"), load(results_dir, "exp_bootstrap_te.npz")
+        load(results_dir, "exp_bootstrap.npz"),
+        load(results_dir, "exp_bootstrap_te.npz"),
+        load(results_dir, "exp_bootstrap_ccm.npz"),
+        load(results_dir, "exp_bootstrap_pcmci.npz"),
     )
     return {k: v for k, v in nums.items() if v is not None or k in ("bootstrap",)}
 

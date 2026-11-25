@@ -33,6 +33,10 @@ dev = [
     "pytest>=9.0.3",
     "ruff>=0.8",
 ]
+# pandoc, to convert LaTeX equations to Office Math when editing the report.
+docs = [
+    "pypandoc-binary>=1.17",
+]
 # Estimators used only by the experiments in claude_tests/ (Kraskov TE via
 # IDTxl, PCMCI via tigramite, which needs joblib).
 experiments = [
@@ -42,7 +46,7 @@ experiments = [
 ]
 
 [tool.uv]
-default-groups = ["dev", "experiments"]
+default-groups = ["dev", "experiments", "docs"]
 
 [tool.uv.sources]
 # IDTxl is not on PyPI; pinned to the commit the experiments ran with.

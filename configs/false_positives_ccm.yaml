@@ -1,0 +1,10 @@
+# CCM: paired t-tests of the per-realisation skills and trial-shuffle surrogates, default grid.
+extends: base.yaml
+name: false_positives_ccm
+experiment: significance_algorithm
+output: results/exp_false_positives_ccm.npz
+options:
+  algorithm: ccm
+  samples_from: results/default_grid_samples.npy   # the samples behind exp_other_estimators
+  n_surrogates: 19
+  alpha: 0.05

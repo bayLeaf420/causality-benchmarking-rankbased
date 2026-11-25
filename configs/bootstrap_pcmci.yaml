@@ -1,0 +1,12 @@
+# Bootstrap over realisations (with replacement) for PCMCI, rerun on each replicate.
+# About 14 core-hours; claude_tests/remote_pcmci_bootstrap.py runs the same draws on a many-core machine.
+extends: base.yaml
+name: bootstrap_pcmci
+experiment: bootstrap
+output: results/exp_bootstrap_pcmci.npz
+options:
+  seed: 0
+  point_from: results/exp_other_estimators.npz
+  samples_from: results/default_grid_samples.npy
+  steps:
+    - {name: pcmci, point_key: pcmci, algorithm: pcmci, B: 50}

@@ -30,6 +30,8 @@ def run_bootstrap(cfg: RunConfig) -> Path:
     truth = point_from["truth"]
     shape = truth.shape
     bench = Benchmark(cfg.system)
+    if "samples_from" in opts:  # the stored samples behind the point estimates
+        bench.use_samples(np.load(opts["samples_from"]))
     out: dict[str, np.ndarray] = {}
     for step in opts["steps"]:
         name, B = step["name"], step["B"]

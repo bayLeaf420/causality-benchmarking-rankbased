@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 from scipy.stats import chi2, ttest_1samp, ttest_rel
 
-from lkif_rank_causal_bench.benchmark import Benchmark
+from lkif_rank_causal_bench.benchmark import Benchmark, estimate_arrays
 from lkif_rank_causal_bench.causal_algorithms import build_algorithm
 from lkif_rank_causal_bench.causal_algorithms.base import CausalAlgorithm
 from lkif_rank_causal_bench.config import RunConfig, algorithm_from_entry
@@ -107,3 +107,36 @@ def run_significance_subgrid(cfg: RunConfig) -> Path:
         points.append(params[ib, ik, im])
         print(f"point {len(points)}: fwd p={res['fwd_p'][-1]:.2f}  rev p={res['rev_p'][-1]:.2f}", flush=True)
     return save_results(cfg.output, {"points": np.array(points), **{k: np.array(v) for k, v in res.items()}})
+
+
+def run_significance_algorithm(cfg: RunConfig) -> Path:
+    """One algorithm on the whole grid: paired t-tests of its per-realisation values and surrogate tests."""
+    opts = cfg.options
+    alpha, S = opts.get("alpha", 0.05), opts.get("n_surrogates", 19)
+    spec = algorithm_from_entry(opts["algorithm"])
+    algorithm = build_algorithm(spec.algorithm, spec.params)
+    bench = Benchmark(cfg.system)
+    if "samples_from" in opts:  # the stored samples behind earlier results
+        bench.use_samples(np.load(opts["samples_from"]))
+    X = bench.samples()
+    shape, idx = bench.shape, np.arange(X.shape[0])
+    src, tgt = TRUTH_ENTRY
+    fwd, rev = algorithm.estimate_both(X, src, tgt, idx)
+    assert rev is not None
+    out = {"alpha": np.array(alpha), "params_tensor": bench.params(), **bench.truth(),
+           **estimate_arrays(spec, fwd, rev, shape)}
+    name = spec.key
+    if fwd.per_realisation is not None and rev.per_realisation is not None:
+        f_r, r_r = fwd.per_realisation, rev.per_realisation
+        out[f"{name}_paired_p"] = p_values(ttest_rel(f_r, r_r, axis=1, alternative="greater")).reshape(shape)
+        out[f"{name}_rev_paired_p"] = p_values(ttest_rel(r_r, f_r, axis=1, alternative="greater")).reshape(shape)
+    for lab, s_, t_, obs in (("", src, tgt, fwd.values), ("_rev", tgt, src, rev.values)):
+        surr = np.empty((S, X.shape[0]))
+        for s in range(1, S + 1):
+            surr[s - 1] = algorithm.estimate(shuffled(X, s_, s, 1), s_, t_, idx).values
+            print(f"{name}{lab} surrogate {s}/{S}", flush=True)
+        out[f"{name}{lab}_p_surrogate"] = surrogate_p(obs, surr).reshape(shape)
+        out[f"{name}{lab}_surrogates"] = surr.reshape((S, *shape))
+    for k in sorted(k for k in out if k.endswith(("_paired_p", "_p_surrogate"))):
+        print(f"{k:24s} significant at {alpha}: {(out[k] <= alpha).mean():.3f}")
+    return save_results(cfg.output, out)

@@ -7,7 +7,11 @@ from lkif_rank_causal_bench.config import RunConfig
 from lkif_rank_causal_bench.experiments.bootstrap import run_bootstrap
 from lkif_rank_causal_bench.experiments.grid import run_grid
 from lkif_rank_causal_bench.experiments.lag_order import run_lag_order
-from lkif_rank_causal_bench.experiments.significance import run_significance, run_significance_subgrid
+from lkif_rank_causal_bench.experiments.significance import (
+    run_significance,
+    run_significance_algorithm,
+    run_significance_subgrid,
+)
 from lkif_rank_causal_bench.experiments.sweeps import run_realisation_sweep, run_setting_sweep
 
 EXPERIMENTS: dict[str, Callable[[RunConfig], Path]] = {
@@ -18,6 +22,7 @@ EXPERIMENTS: dict[str, Callable[[RunConfig], Path]] = {
     "bootstrap": run_bootstrap,
     "significance": run_significance,
     "significance_subgrid": run_significance_subgrid,
+    "significance_algorithm": run_significance_algorithm,
 }
 
 

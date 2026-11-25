@@ -18,7 +18,7 @@ Measures included:
 | Granger causality (conditional and bivariate) | least-squares regression, in JAX |
 | Exact Granger causality of the model | Kalman filter on the known VAR(1) |
 | Transfer entropy (Kraskov estimator) | [IDTxl](https://github.com/pwollstadt/IDTxl) |
-| Compression-Complexity Causality (CCC) | JAX, validated against a MATLAB reference |
+| Compression-Complexity Causality (CCC) | JAX |
 | PCMCI (partial-correlation test) | [tigramite](https://github.com/jakobrunge/tigramite) |
 | Convergent cross mapping (CCM) | NumPy / SciPy |
 
@@ -27,8 +27,8 @@ Measures included:
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone <repository-url>
-cd <repository>
+git clone https://github.com/bayLeaf420/causality-benchmarking-rankbased.git
+cd causality-benchmarking-rankbased
 uv sync
 ```
 
@@ -47,13 +47,6 @@ python -m lkif_rank_causal_bench run configs/noise_sweep.yaml configs/dt_sweep.y
 Results are written as `.npz` files in `results/`. A grid run saves after each
 causal algorithm and skips algorithms that are already in its output file, so an
 interrupted run continues where it stopped.
-
-To make the report figures and the numbers quoted in the report:
-
-```bash
-python -m lkif_rank_causal_bench figures   # docs/figures/*.png
-python -m lkif_rank_causal_bench numbers   # docs/report_numbers.json
-```
 
 The package can also be used from Python:
 
@@ -110,8 +103,9 @@ Experiment types:
 | `setting_sweep` | repeats the grid run for several values of a simulation setting | `noise_sweep.yaml`, `dt_sweep.yaml` |
 | `realisation_sweep` | scores the algorithms on the first R realisations, for several R | `realisations.yaml` |
 | `lag_order` | Granger causality at several lag orders, and the exact GC | `lag_order.yaml` |
-| `bootstrap` | spread of τ over resampled realisations | `bootstrap.yaml`, `bootstrap_te.yaml` |
+| `bootstrap` | spread of τ over resampled realisations | `bootstrap.yaml`, `bootstrap_te.yaml`, `bootstrap_ccm.yaml`, `bootstrap_pcmci.yaml` |
 | `significance`, `significance_subgrid` | significance tests in both directions (false-positive rates) | `false_positives.yaml`, `false_positives_te.yaml` |
+| `significance_algorithm` | one algorithm on the whole grid: paired t-tests of its per-realisation values and trial-shuffle surrogates | `false_positives_ccm.yaml` |
 
 ## Project structure
 
@@ -168,7 +162,8 @@ estimate(X, source, target, indices) -> Estimate
 `X` holds the samples of some grid points, with shape `(n_points, realisations,
 4, time)`, in the state order (x₁, v₁, x₂, v₂). `indices` gives their positions in
 the grid. Measures that get both directions in one pass (PCMCI, CCM, CCC) also
-override `estimate_both`.
+override `estimate_both`. CCC and CCM also return one value per realisation,
+which the paired t-tests and the cheap bootstrap use.
 
 ### Adding a causality measure
 
@@ -198,15 +193,6 @@ module uses only what the earlier ones define.
 9. `cli.py`
 
 The tests in `tests/` follow the same order and state what each part must do.
-
-## Testing and linting
-
-```bash
-pytest              # 85 tests, about 2 minutes
-pytest -m slow      # also checks the ODE route against the symbolic LKIF (about 2 minutes more)
-ruff check          # style and docstrings
-pyright             # static types
-```
 
 ## Reproducibility
 

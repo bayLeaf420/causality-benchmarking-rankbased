@@ -13,7 +13,9 @@ from matplotlib.patches import Patch
 from lkif_rank_causal_bench.plotting.style import (
     BLUE,
     C_CCC,
+    C_CCM,
     C_GC,
+    C_PCMCI,
     C_TE,
     FIG_W,
     GRID,
@@ -131,10 +133,14 @@ def significance_figure(nums: Numbers, path: Path) -> None:
         ("TE, trial-shuffle surrogates", "te_p_surrogate", "te_rev_p_surrogate", C_TE),
         ("CCC, t-test against 0", "ccc_p", "ccc_rev_p", C_CCC),
         ("CCC, paired t-test fwd vs rev", "ccc_paired_p", "ccc_rev_paired_p", C_CCC),
+        ("PCMCI, MCI test (Bonferroni, 2 lags)", "pcmci_p_analytic", "pcmci_rev_p_analytic", C_PCMCI),
+        ("CCM, trial-shuffle surrogates", "ccm_p_surrogate", "ccm_rev_p_surrogate", C_CCM),
+        ("CCM, paired t-test fwd vs rev", "ccm_paired_p", "ccm_rev_paired_p", C_CCM),
     ]
+    tests = [t for t in tests if fp.get(t[1]) is not None]
     y = np.arange(len(tests))[::-1]
     h = 0.36
-    fig, ax = plt.subplots(figsize=(FIG_W * 0.85, 2.6), dpi=200)
+    fig, ax = plt.subplots(figsize=(FIG_W * 0.85, 0.75 + 0.42 * len(tests)), dpi=200)
     for yi, (_label, fk, rk, colour) in zip(y, tests, strict=True):
         f, r = 100 * (fp.get(fk) or 0.0), 100 * (fp.get(rk) or 0.0)
         ax.barh(yi + h / 2, f, h, color=colour, edgecolor=colour, linewidth=1.2, zorder=3)
@@ -163,7 +169,14 @@ def significance_figure(nums: Numbers, path: Path) -> None:
 def confidence_figure(nums: Numbers, path: Path) -> None:
     """Forest plot: point estimate and 2.5-97.5 % range of the global and per-axis tau for GC, TE, CCC."""
     ci = nums.get("bootstrap") or {}
-    estimators = [("gc", "GC", C_GC), ("te", "TE (20 of 40 realisations)", C_TE), ("ccc", "CCC", C_CCC)]
+    estimators = [
+        ("gc", "GC", C_GC),
+        ("te", "TE (20 of 40 realisations)", C_TE),
+        ("ccc", "CCC", C_CCC),
+        ("pcmci", "PCMCI", C_PCMCI),
+        ("ccm", "CCM", C_CCM),
+    ]
+    estimators = [e for e in estimators if ci.get(e[0])]
     measures = ["global", "along $\\beta$", "along $K$", "along $\\mu$"]
     rows: list[tuple[str, str, str, float, float, float]] = []  # (measure, estimator, colour, centre, lo, hi)
     for i, measure in enumerate(measures):
@@ -172,7 +185,7 @@ def confidence_figure(nums: Numbers, path: Path) -> None:
             if c:
                 centre = c["mean"][i] if key == "te" and "mean" in c else c["point"][i]
                 rows.append((measure, label, colour, centre, c["lo"][i], c["hi"][i]))
-    fig, ax = plt.subplots(figsize=(FIG_W, 3.6), dpi=200)
+    fig, ax = plt.subplots(figsize=(FIG_W, 1.0 + 0.6 * len(estimators) * len(measures) / 3), dpi=200)
     y = np.arange(len(rows))[::-1].astype(float)
     y -= np.repeat(np.arange(len(measures)), len(estimators))[: len(rows)] * 1.2  # gap between measures
     for yi, (_, _label, colour, centre, lo, hi) in zip(y, rows, strict=True):
