@@ -1,0 +1,15 @@
+# Compression-Complexity Causality with the long-window settings (src/algorithms/ccc).
+algorithm: ccc
+key: ccc
+reverse_key: ccc_reverse
+params:
+  past: 640              # samples of history in each window
+  present: 64            # samples of "future" being compressed; must be << past
+  jump: 200              # step between windows
+  bins: 8                # symbols per series (bins^2 joint symbols)
+  tolerance: 1.0e-6      # ETC stopping rule
+  n_realisations: null   # null = every realisation
+  chunk: 32              # (point, realisation) pairs per compiled call
+  workers: 0             # 0 = in this process; > 0 = resumable worker processes
+  parts_dir: null        # per-chunk files for workers > 0
+  stop_after: null       # seconds before a worker run stops starting new chunks

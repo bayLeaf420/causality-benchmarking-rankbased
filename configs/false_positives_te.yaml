@@ -1,0 +1,9 @@
+# Trial-shuffle test of Kraskov TE on grid indices {0, 3, 5} along each axis.
+extends: base.yaml
+name: false_positives_te
+experiment: significance_subgrid
+output: results/exp_false_positives_te.npz
+options:
+  algorithm: te_kraskov
+  index_values: [0, 3, 5]
+  n_surrogates: 19

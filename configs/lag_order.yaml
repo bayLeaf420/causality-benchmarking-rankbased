@@ -1,0 +1,7 @@
+# Conditional GC at several lag orders, and the exact GC of the model.
+extends: base.yaml
+name: lag_order
+experiment: lag_order
+output: results/exp_gc_lag_statespace.npz
+options:
+  lags: [1, 2, 3, 4, 6, 8]

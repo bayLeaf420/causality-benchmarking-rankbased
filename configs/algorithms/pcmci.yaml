@@ -1,0 +1,8 @@
+# PCMCI with the partial-correlation test (tigramite).
+algorithm: pcmci
+key: pcmci
+reverse_key: pcmci_reverse
+params:
+  tau_max: 2       # largest lag tested, as GC
+  pc_alpha: 0.05   # significance level of the PC condition-selection stage
+  workers: null    # null = one process per physical core

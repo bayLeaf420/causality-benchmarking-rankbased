@@ -1,0 +1,16 @@
+# Grid entirely below the CCC limits: K in [0.3, 0.9], mu in [0.05, 0.45].
+extends: base.yaml
+name: outside_box
+experiment: grid
+output: results/exp_outside_box.npz
+save_samples: results/exp_outside_box_samples.npy
+system:
+  grid: {K: [0.3, 0.9, 6], mu: [0.05, 0.45, 6]}
+algorithms:
+  - gc
+  - gc_bivariate
+  - te_kraskov
+  - use: ccc
+    params: {n_realisations: 10, workers: 6, parts_dir: results/exp_outside_box_ccc, stop_after: 3240}
+  - pcmci
+  - ccm

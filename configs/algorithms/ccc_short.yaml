@@ -1,0 +1,7 @@
+# CCC with the short-window settings of the earlier 600-sample runs.
+extends: ccc.yaml
+params:
+  past: 200
+  present: 20
+  jump: 50
+  chunk: 64

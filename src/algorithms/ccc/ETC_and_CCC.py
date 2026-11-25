@@ -13,6 +13,10 @@ from algorithms.ccc.ETC_helpers import (
     dimensionsToOne,
     bin_timeseries,
 )
+
+# Set True to re-enable the per-call validity assertion in ETC_jit. It costs a
+# device->host sync per call, so it must stay off for grid sweeps.
+CHECK_VALID_LENGTH = False
 # @partial(jax.vmap, in_axes=(0, 0))
 
 
@@ -48,17 +52,24 @@ def ETC_jit(input_data, max_length, num_bins, H_1_tolerance, is_joint=False):
     # sym_seq = bin_timeseries(input_data, max_length, num_bins) # BIN timeseries, important
     initial_valid_len = jnp.sum(sym_seq != -1)
 
-    jax.debug.callback(
-        lambda v, m: (
-            (_ for _ in ()).throw(
-                ValueError(f"initial_valid_len={v} != max_length={m}")
-            )
-            if v != m
-            else None
-        ),
-        initial_valid_len,
-        max_length,
-    )
+    # The validity assertion that used to live here was a jax.debug.callback,
+    # which forces a device->host sync on every ETC call. With four ETC calls
+    # per window, times windows, times grid points, times realisations, that
+    # dominates the runtime of a GPU grid sweep. `bin_timeseries` no longer
+    # emits the -1 marker from raw input, so a short sequence here is not
+    # reachable; set CHECK_VALID_LENGTH to re-enable the check when debugging.
+    if CHECK_VALID_LENGTH:
+        jax.debug.callback(
+            lambda v, m: (
+                (_ for _ in ()).throw(
+                    ValueError(f"initial_valid_len={v} != max_length={m}")
+                )
+                if jnp.all(v != m)
+                else None
+            ),
+            initial_valid_len,
+            max_length,
+        )
 
     def body(_, state):
         seq, iters = state

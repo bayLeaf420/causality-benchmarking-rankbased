@@ -1,0 +1,11 @@
+# Kraskov TE: subsets of 20 of the 40 realisations WITHOUT replacement
+# (with replacement, duplicated samples bias the nearest-neighbour estimate).
+extends: base.yaml
+name: bootstrap_te
+experiment: bootstrap
+output: results/exp_bootstrap_te.npz
+options:
+  seed: 2
+  point_from: results/default_grid.npz
+  steps:
+    - {name: te, point_key: te_conditional, algorithm: te_kraskov, method: subsample, size: 20, B: 16, stop_after: 3120}

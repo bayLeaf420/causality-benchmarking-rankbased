@@ -1,0 +1,8 @@
+# Bivariate Granger causality on the (x2, v1) pair only; no reverse is stored.
+algorithm: gc
+key: gc_bivariate
+reverse_key: null
+params:
+  lag: 2
+  conditional: false
+  chunk: 4

@@ -1,0 +1,10 @@
+# GC: chi-square and trial-shuffle tests; CCC: t-tests of the per-realisation values.
+extends: base.yaml
+name: false_positives
+experiment: significance
+output: results/exp_false_positives.npz
+options:
+  observed_from: results/default_grid.npz
+  gc: gc
+  n_surrogates: 19
+  alpha: 0.05

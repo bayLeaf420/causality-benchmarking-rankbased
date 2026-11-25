@@ -1,0 +1,11 @@
+# Sampling interval over the same 150 time units; dt = 0.1 is the default run.
+extends: base.yaml
+name: dt_sweep
+experiment: setting_sweep
+output: results/exp_dt.npz
+options:
+  fields: [tau]
+  values: [[0.0, 150.0, 3001], [0.0, 150.0, 751], [0.0, 150.0, 376]]
+  labels: [0.05, 0.2, 0.4]
+  index_key: dts
+algorithms: [gc, gc_bivariate, te_kraskov]

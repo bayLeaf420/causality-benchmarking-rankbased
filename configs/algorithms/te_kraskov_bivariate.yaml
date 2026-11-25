@@ -1,0 +1,9 @@
+# Bivariate Kraskov transfer entropy on the (x2, v1) pair only.
+algorithm: te_kraskov
+key: te_bivariate
+reverse_key: te_bivariate_reverse
+params:
+  lag: 2
+  k: 4
+  conditional: false
+  threads: null

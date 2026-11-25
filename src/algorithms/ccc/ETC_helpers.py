@@ -136,17 +136,22 @@ def substitute(
 def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarray:
     """
     Inputs:
-    1. x: shape(L,) use vmap if required.
+    1. x: shape(L,) use vmap if required. Raw floats, no padding.
 
     Outputs:
-    1.
-    Takes in floating point jax array, outputs symbolic sequence in [1, num_bins]
-    dtype int32.
+    1. symbolic sequence in [0, num_bins - 1], dtype int32.
 
     VMapping: axis 0 is perpendicular to the time direction. axis 1 is time.
     So, num_bins will look like: np.array([bins_cause, bins_effect], dtype=np.int32)
+
+    Note: this used to carry a `jnp.where(x != -1, ..., -1)` clause that treated
+    an input value of exactly -1.0 as ETC's "already consumed" padding marker.
+    The input here is always a full-length raw float window, so the clause was
+    vestigial -- and actively wrong, because a genuine -1.0 datum became -1 and
+    `dimensionsToOne` then mapped it to -1 * stride + b, which is not the marker
+    and gets hashed as an ordinary symbol. Padding only exists inside the ETC
+    substitution loop, which creates it itself.
     """
-    # breakpoint()
     if x.shape[-1] != max_length:
         raise ValueError(
             f"x shape is different than max value.\nx.shape = {x.shape}\nmax_length = {max_length}"
@@ -154,18 +159,12 @@ def bin_timeseries(x: jnp.ndarray, max_length: int, num_bins: int) -> jnp.ndarra
 
     x_min = jnp.min(x)
     x_max = jnp.max(x)
+    # the +1e-6 keeps x_max itself inside the last bin and guards a constant
+    # window, where x_max - x_min is 0
     x_range = x_max - x_min + 1e-6
-    # x_range = jnp.where(x_range != 0, x_range, jnp.abs(x_max))
     delta = x_range / num_bins
-    jax.debug.callback(
-        lambda r: (
-            (_ for _ in ()).throw(ValueError("x_range is <= 0")) if r <= 0 else None
-        ),
-        x_range,
-    )
 
-    x_binned = jnp.where(x != -1, (x - x_min) / delta, -1)
-    return jnp.floor(x_binned).astype(jnp.int32)
+    return jnp.floor((x - x_min) / delta).astype(jnp.int32)
 
 
 @partial(jax.jit, static_argnums=(1,))

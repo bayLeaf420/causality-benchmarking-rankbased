@@ -3,7 +3,7 @@ from algorithms.tc import (
     build_time_integral_fn,
     tc_integral,
 )
-from utils import build_params_tensor_jax
+from lkif_rank_causal_bench.oscillator.grid import params_tensor_from_ranges as build_params_tensor_jax
 import time
 from itertools import product
 import pickle

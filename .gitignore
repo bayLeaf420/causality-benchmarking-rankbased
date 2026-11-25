@@ -35,6 +35,7 @@ htmlcov/
 .coverage
 .coverage.*
 .nosenv/
+*.bak
 
 # ==========================================
 # Packaging & Builds (If you ever build a package)
@@ -63,9 +64,13 @@ share/python-wheels/
 Thumbs.db
 
 # ==========================================
-# Generated Data
+# claude_tests: keep scripts and current logs, drop the rolled-over copies
 # ==========================================
-results/*
+claude_tests/logs/*.log.prev
+claude_tests/*
+tests/*
+docs/*
 plots/*
-!results/.gitkeep
-!plots/.gitkeep
+results/*
+
+*.npy

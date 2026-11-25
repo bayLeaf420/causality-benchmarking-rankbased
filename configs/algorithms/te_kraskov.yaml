@@ -1,0 +1,9 @@
+# Conditional Kraskov transfer entropy (IDTxl), the counterpart of conditional GC.
+algorithm: te_kraskov
+key: te_conditional
+reverse_key: te_conditional_reverse
+params:
+  lag: 2           # past samples of every variable
+  k: 4             # nearest neighbours
+  conditional: true
+  threads: null    # k-d tree threads; null = all CPUs (results do not depend on it)

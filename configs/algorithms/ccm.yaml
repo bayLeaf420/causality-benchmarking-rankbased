@@ -1,0 +1,9 @@
+# Convergent cross mapping: does v1's delay embedding predict x2?
+algorithm: ccm
+key: ccm
+reverse_key: ccm_reverse
+params:
+  E: 4             # embedding dimension (the system has 4 variables)
+  tau: 4           # embedding delay in samples (0.4 time units at dt = 0.1)
+  theiler: 10      # neighbours closer in time than this are excluded
+  workers: null

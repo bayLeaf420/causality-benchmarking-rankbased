@@ -1,0 +1,11 @@
+# Bootstrap over realisations (with replacement); steps share one generator, in order.
+extends: base.yaml
+name: bootstrap
+experiment: bootstrap
+output: results/exp_bootstrap.npz
+options:
+  seed: 0
+  point_from: results/default_grid.npz
+  steps:
+    - {name: ccc, point_key: ccc, per_realisation_from: results/default_grid.npz, B: 1000}
+    - {name: gc, point_key: gc_conditional, algorithm: gc, B: 50}

@@ -1,0 +1,18 @@
+extends: base.yaml
+name: default_grid
+experiment: grid
+output: results/default_grid.npz
+save_samples: results/default_grid_samples.npy
+system:
+  simulation:
+    sample_dtype: float64   # the stored GC was computed on float64 samples
+algorithms:
+  - use: gc
+    params: {gaussian_te_key: te_gaussian}
+  - gc_bivariate
+  - te_kraskov
+  - te_kraskov_bivariate
+  - use: ccc
+    params: {workers: 4, parts_dir: results/default_grid_ccc_parts, stop_after: 3180}
+  - pcmci
+  - ccm

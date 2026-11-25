@@ -1,0 +1,10 @@
+# Noise power q = q1 = q2; q = 0.1 is the default run.
+extends: base.yaml
+name: noise_sweep
+experiment: setting_sweep
+output: results/exp_noise.npz
+options:
+  fields: [q1, q2]
+  values: [0.01, 0.03, 0.3, 1.0]
+  index_key: qs
+algorithms: [gc, gc_bivariate, te_kraskov]

@@ -1,0 +1,16 @@
+# Damped driver sampled from its stationary law; truth = LKIF at the stationary covariance.
+extends: base.yaml
+name: stationary
+experiment: grid
+output: results/exp_stationary.npz
+save_samples: results/exp_stationary_samples.npy
+system:
+  simulation: {beta2: 0.1, stationary: true}
+algorithms:
+  - gc
+  - gc_bivariate
+  - te_kraskov
+  - use: ccc
+    params: {n_realisations: 10, workers: 6, parts_dir: results/exp_stationary_ccc, stop_after: 3240}
+  - pcmci
+  - ccm

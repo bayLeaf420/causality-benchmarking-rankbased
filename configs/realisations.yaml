@@ -1,0 +1,12 @@
+# First R of 80 realisations (new sample, seed 1); CCC subsets from the default run.
+extends: base.yaml
+name: realisations
+experiment: realisation_sweep
+output: results/exp_realisations.npz
+system:
+  simulation: {n_realisations: 80, seed: 1}
+options:
+  subsets: [10, 20, 40, 80]
+  ccc_from: results/default_grid.npz
+  ccc_subsets: [10, 20, 40]
+algorithms: [gc, gc_bivariate, te_kraskov]

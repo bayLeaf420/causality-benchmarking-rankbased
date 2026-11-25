@@ -1,0 +1,17 @@
+# The earlier wide 5 x 5 x 5 grid (includes K < 1 and mu < 0.5), long window.
+extends: base.yaml
+name: wide_long
+experiment: grid
+output: results/benchmark_ccc_long.npz
+system:
+  grid: {beta: [0.25, 2.25, 5], K: [0.4, 2.2, 5], mu: [0.25, 2.25, 5]}
+  simulation: {n_realisations: 8, sample_dtype: float64}
+algorithms:
+  - use: gc
+    params: {gaussian_te_key: te_gaussian}
+  - gc_bivariate
+  - te_kraskov
+  - te_kraskov_bivariate
+  - ccc
+  - pcmci
+  - ccm

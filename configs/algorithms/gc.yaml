@@ -1,0 +1,9 @@
+# Conditional linear Granger causality (x2 -> v1 given x1 and v2).
+algorithm: gc
+key: gc_conditional
+reverse_key: gc_reverse
+params:
+  lag: 2                  # VAR order, fixed across the grid
+  conditional: true       # condition on every other variable
+  chunk: 4                # grid points per vmapped call (also fixes the float batching)
+  gaussian_te_key: null   # set to te_gaussian to also store TE = GC / 2

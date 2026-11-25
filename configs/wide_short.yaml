@@ -1,0 +1,15 @@
+# The earlier wide grid with 600 samples and the short CCC window.
+extends: wide_long.yaml
+name: wide_short
+output: results/benchmark_ccc.npz
+system:
+  simulation: {tau: [0.0, 60.0, 600], n_realisations: 10}
+algorithms:
+  - use: gc
+    params: {gaussian_te_key: te_gaussian}
+  - gc_bivariate
+  - te_kraskov
+  - te_kraskov_bivariate
+  - ccc_short
+  - pcmci
+  - ccm

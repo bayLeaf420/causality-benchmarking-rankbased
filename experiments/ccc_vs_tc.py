@@ -1,5 +1,5 @@
 from algorithms.tc_numerical import time_integrals, _build_lambda_fns
-from sampling import sample_oscillator_tensor
+from lkif_rank_causal_bench.oscillator.sampler import sample_oscillator_tensor
 from algorithms.ccc.ETC_and_CCC import CCC_calculation
 import jax
 import jax.numpy as jnp
